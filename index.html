@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receiving System 1.4 - أسواق فتح الله ماركت</title>
-    <!-- مكتبة قراءة ملفات الإكسل SheetJS -->
+    <!-- مكتبة قراءة ملفات الإكسل SheetJS الحديثة -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
@@ -15,7 +15,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 850px;
             margin: 0 auto;
             background: #1e1e1e;
             padding: 20px;
@@ -67,6 +67,7 @@
         }
         th {
             background-color: #2c2c2c;
+            color: #d35400;
         }
     </style>
 </head>
@@ -105,7 +106,6 @@
 </div>
 
 <script>
-    // دالة التعامل مع ملف الإكسل المرفوع
     function handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -114,54 +114,64 @@
         reader.onload = function(e) {
             try {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                // قراءة الشيت بدعم شامل للملفات الثنائية والـ XLS القديمة
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 
-                // قراءة أول ورقة عمل في الشيت
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 
-                // تحويل الشيت إلى JSON
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                // تحويل الشيت إلى مصفوفة صفوف (Array of Arrays) لضمان عدم ضياع أي صف حتى لو اختلفت العناوين
+                const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                 
-                // معالجة البيانات بالنسخة 1.4 المطورة
-                processExcelData1_4(jsonData);
+                processExcelData1_4(rawData);
             } catch (error) {
                 console.error(error);
-                alert("حدث خطأ أثناء قراءة الملف، تأكد أنه ملف إكسل صالح.");
+                alert("حدث خطأ أثناء قراءة الملف، تأكد من صحة ملف الإكسل.");
             }
         };
         reader.readAsArrayBuffer(file);
     }
 
-    // المنطق البرمجي المحسّن للإصدار 1.4 (حل مشكلة عدم العثور على أصناف)
-    function processExcelData1_4(jsonData) {
-        if (!jsonData || !Array.isArray(jsonData) || jsonData.length === 0) {
-            alert("الملف فارغ أو غير صالح للقراءة.");
+    function processExcelData1_4(rows) {
+        if (!rows || rows.length === 0) {
+            alert("الملف فارغ تماماً.");
             return;
         }
 
         let items = [];
+        let startIndex = 0;
 
-        jsonData.forEach((row) => {
-            if (!row || Object.keys(row).length === 0) return;
+        // البحث التلقائي عن صف الهيدر أو البدء المباشر في قراءة البيانات
+        for (let i = 0; i < rows.length; i++) {
+            let row = rows[i];
+            // التحقق إذا كان الصف يحتوي على أعمدة دلالية أو بيانات معتبرة
+            if (row && row.length > 0) {
+                let textJoined = row.join(" ").toLowerCase();
+                if (textJoined.includes("كود") || textJoined.includes("صنف") || textJoined.includes("كمية")) {
+                    startIndex = i + 1; // البدء من الصف التالي لصف العناوين
+                    break;
+                }
+            }
+        }
 
-            let keys = Object.keys(row);
-            
-            // مرونة عالية في جلب الأعوام بغض النظر عن اختلاف المسميات
-            let itemCode = row['كود الصنف'] || row['الكود'] || row['Code'] || row['code'] || row[keys[0]];
-            let itemName = row['اسم الصنف'] || row['البيان'] || row['الاصناف'] || row['Name'] || row['name'] || row[keys[1]];
-            let itemQty  = row['الكمية'] || row['العدد'] || row['Qty'] || row['qty'] || row[keys[2]];
+        // إذا لم يتم العثور على هيدر صريح، نبدأ من الصف الأول
+        let processingRows = startIndex > 0 ? rows.slice(startIndex - 1) : rows;
 
-            if (itemCode) itemCode = String(itemCode).trim();
-            if (itemName) itemName = String(itemName).trim();
-            if (itemQty)  itemQty  = String(itemQty).trim();
+        processingRows.forEach((row) => {
+            if (!row || row.length === 0) return;
 
-            // استبعاد صف العناوين أو الصفوف الوهمية
+            // استخراج الأعمدة بالترتيب الاحتياطي (الكود، الاسم، الكمية)
+            let itemCode = row[0] !== undefined ? String(row[0]).trim() : "";
+            let itemName = row[1] !== undefined ? String(row[1]).trim() : "";
+            let itemQty  = row[2] !== undefined ? String(row[2]).trim() : "";
+
+            // استبعاد صفوف العناوين المكررة أو الفارغة
             if (itemCode && 
                 itemCode !== "كود الصنف" && 
                 itemCode !== "الكود" && 
                 itemCode !== "code" && 
-                itemCode !== "Code") {
+                itemCode !== "Code" &&
+                itemCode !== "م") {
                 
                 items.push({
                     code: itemCode,
@@ -172,15 +182,48 @@
         });
 
         if (items.length === 0) {
-            console.warn("Raw Data Read in v1.4:", jsonData);
-            alert("تم قراءة الشيت، ولكن لم يتم العثور على أي أصناف مطابقة. تأكد من تطابق أعمدة الملف.");
+            // محاولة قراءة بديلة بطريقة الـ Object إذا فشلت الطريقة التسلسلية
+            console.warn("Retrying with object mapping...");
+            processObjectMapping(rows);
         } else {
             console.log(`تم بنجاح استخراج ${items.length} صنف في Receiving System 1.4`);
             displayItemsTable(items);
         }
     }
 
-    // دالة عرض الجدول في واجهة المستخدم
+    function processObjectMapping(rows) {
+        // طريقة احتياطية إضافية لضمان قراءة أي شيت معقد
+        let worksheet = XLSX.utils.aoa_to_sheet(rows);
+        let jsonObjs = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+        let items = [];
+
+        jsonObjs.forEach((row) => {
+            let keys = Object.keys(row);
+            if (keys.length === 0) return;
+
+            let itemCode = row['كود الصنف'] || row['الكود'] || row['Code'] || row['code'] || row[keys[0]];
+            let itemName = row['اسم الصنف'] || row['البيان'] || row['الاصناف'] || row['Name'] || row[keys[1]];
+            let itemQty  = row['الكمية'] || row['العدد'] || row['Qty'] || row[keys[2]];
+
+            if (itemCode) {
+                itemCode = String(itemCode).trim();
+                if (itemCode !== "كود الصنف" && itemCode !== "الكود") {
+                    items.push({
+                        code: itemCode,
+                        name: itemName ? String(itemName).trim() : "صنف بدون اسم",
+                        qty: itemQty !== undefined ? String(itemQty).trim() : 0
+                    });
+                }
+            }
+        });
+
+        if (items.length === 0) {
+            alert("تعذر العثور على أصناف في هذا الشيت، تأكد من أن الملف يحتوي على أعمدة للأكواد والكميات.");
+        } else {
+            displayItemsTable(items);
+        }
+    }
+
     function displayItemsTable(items) {
         let tableBody = document.getElementById('itemsTableBody');
         tableBody.innerHTML = '';
