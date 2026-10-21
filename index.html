@@ -6,7 +6,7 @@
     <title>أسواق فتح الله ماركت - نظام استلام التحويلات</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS (XLSX) - تدعم ملفات FMS Xls -->
+    <!-- SheetJS (XLSX) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- HTML5 QRCode Scanner -->
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -31,7 +31,7 @@
     <!-- Header -->
     <header class="bg-slate-800 text-white p-4 rounded-2xl shadow-xl flex justify-between items-center mb-6 max-w-6xl mx-auto w-full border border-slate-700 no-print">
         <div class="flex items-center space-x-3 space-x-reverse">
-            <!-- اللوجو مع معالجة ذكية -->
+            <!-- اللوجو مع معالجة ذكية في حال عدم وجود الملف -->
             <img src="63703.png" alt="Fathalla Logo" 
                  onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23ea580c\'/><text x=\'50\' y=\'70\' font-size=\'65\' font-family=\'Arial\' font-weight=\'bold\' fill=\'white\' text-anchor=\'middle\'>F</text></svg>'" 
                  class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
@@ -53,7 +53,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-right mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-700 text-xs">
                 <div>
                     <label class="block font-bold mb-1">رقم إذن التحويل *</label>
-                    <input type="text" id="inputDocNo" value="1917" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white font-bold focus:outline-none focus:border-orange-500">
+                    <input type="text" id="inputDocNo" value="" placeholder="يتم سحبه تلقائياً أو أدخله يدوياً" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white font-bold focus:outline-none focus:border-orange-500">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">تاريخ إذن الاستلام المرجعي *</label>
@@ -73,7 +73,7 @@
                 </div>
             </div>
 
-            <!-- تم إضافة الامتداد .Xls بحروف كبيرة ليتوافق مع نظام FMS -->
+            <!-- إضافة الامتداد .Xls الخاص بـ FMS -->
             <input type="file" id="excelFileInput" accept=".xlsx, .xls, .Xls, .csv" class="hidden">
             
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
@@ -233,8 +233,11 @@
                     const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, defval: ""});
 
                     currentItems = [];
-                    
-                    for(let r = 0; r < 8; r++) {
+                    let headerRowIdx = -1;
+                    let colMap = { qty: -1, name: -1, barcode: -1, code: -1 };
+
+                    // قراءة رقم المستند من الترويسة
+                    for(let r = 0; r < Math.min(15, rawRows.length); r++) {
                         const rowStr = rawRows[r] ? rawRows[r].join(" ") : "";
                         if(rowStr.includes("رقم المستند")) {
                             const match = rowStr.match(/رقم المستند\s*:\s*(\d+)/);
@@ -242,16 +245,48 @@
                         }
                     }
 
-                    for (let r = 9; r < rawRows.length; r++) {
+                    // البحث الذكي والديناميكي عن أعمدة الشيت لتجنب الأخطاء
+                    for (let r = 0; r < Math.min(25, rawRows.length); r++) {
                         const row = rawRows[r];
-                        if (!row || row.length < 25) continue;
+                        if (!row) continue;
+                        
+                        let foundQty = -1, foundName = -1, foundBarcode = -1, foundCode = -1;
+                        for (let c = 0; c < row.length; c++) {
+                            const val = String(row[c]).trim();
+                            if (val.includes("الكمية الفعلية")) foundQty = c;
+                            else if (val.includes("الباركود")) foundBarcode = c;
+                            else if (val.includes("اسم الصنف")) foundName = c;
+                            else if (val.includes("كود الصنف")) foundCode = c;
+                        }
 
-                        const actualQty = parseFloat(row[0]); 
-                        const name = String(row[10]).trim();  
-                        const barcode = String(row[23]).trim(); 
-                        const itemCode = String(row[26]).trim(); 
+                        // إذا وجدنا عمود الباركود واسم الصنف، فهذا هو صف العناوين!
+                        if (foundBarcode !== -1 && foundName !== -1) {
+                            headerRowIdx = r;
+                            colMap.qty = foundQty !== -1 ? foundQty : 0; 
+                            colMap.barcode = foundBarcode;
+                            colMap.name = foundName;
+                            colMap.code = foundCode;
+                            break;
+                        }
+                    }
 
-                        if (barcode && barcode !== "" && !isNaN(actualQty)) {
+                    // لو النظام لم يجد صف العناوين
+                    if (headerRowIdx === -1) {
+                        alert("لم نتمكن من استخراج بيانات تحويل صحيحة من هذا الشيت. تأكد من أنه إذن صرف فتح الله الرسمي.");
+                        return;
+                    }
+
+                    // استخراج الأصناف بناءً على الأعمدة المكتشفة بذكاء
+                    for (let r = headerRowIdx + 1; r < rawRows.length; r++) {
+                        const row = rawRows[r];
+                        if (!row || row.length === 0) continue;
+
+                        const actualQty = parseFloat(row[colMap.qty]); 
+                        const name = row[colMap.name] ? String(row[colMap.name]).trim() : '';  
+                        const barcode = row[colMap.barcode] ? String(row[colMap.barcode]).trim() : ''; 
+                        const itemCode = colMap.code !== -1 && row[colMap.code] ? String(row[colMap.code]).trim() : ''; 
+
+                        if (barcode && barcode !== "" && !isNaN(actualQty) && actualQty > 0) {
                             currentItems.push({
                                 id: currentItems.length,
                                 barcode: barcode,
@@ -269,7 +304,7 @@
                     }
 
                     if(currentItems.length === 0) {
-                        alert("لم نتمكن من استخراج بيانات تحويل صحيحة من هذا الشيت.");
+                        alert("تم قراءة الشيت، ولكن لم يتم العثور على أي أصناف قابلة للاستلام.");
                         return;
                     }
 
@@ -311,8 +346,7 @@
                     closeScanner();
                     triggerSearch(decodedText);
                 },
-                function(errorMessage) {
-                }
+                function(errorMessage) {}
             );
         }
 
@@ -363,7 +397,6 @@
             const expStr = `${expYear}-${String(prodMonth).padStart(2, '0')}`;
 
             const totalShelfMonths = years * 12; 
-            
             const passedMonths = (recDateObj.getFullYear() - prodYear) * 12 + ((recDateObj.getMonth() + 1) - prodMonth);
 
             if (passedMonths >= totalShelfMonths) {
