@@ -1,1814 +1,458 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام استلام الأصناف</title>
-  <!-- مكتبة قراءة وتصدير ملفات Excel -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --success: #16a34a;
-      --warning: #ca8a04;
-      --danger: #dc2626;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      padding: 20px;
-      line-height: 1.5;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      background: var(--card-bg);
-      padding: 15px 20px;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      color: var(--primary);
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 5px;
-      color: var(--text-muted);
-    }
-
-    input, select {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--primary);
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .stat-box {
-      background: var(--card-bg);
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border-top: 4px solid var(--primary);
-    }
-
-    .stat-box.success { border-top-color: var(--success); }
-    .stat-box.warning { border-top-color: var(--warning); }
-    .stat-box.danger { border-top-color: var(--danger); }
-
-    .stat-box h3 {
-      font-size: 1.5rem;
-      margin-bottom: 5px;
-    }
-
-    .stat-box p {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .table-container {
-      overflow-x: auto;
-      margin-bottom: 20px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: right;
-      font-size: 0.9rem;
-    }
-
-    th, td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      background-color: #f1f5f9;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    tr:hover {
-      background-color: #f8fafc;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .badge.ok { background: #dcfce7; color: var(--success); }
-    .badge.warn { background: #fef9c3; color: var(--warning); }
-    .badge.bad { background: #fee2e2; color: var(--danger); }
-
-    button {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: background-color 0.2s;
-    }
-
-    button:hover {
-      background-color: var(--primary-dark);
-    }
-
-    button.secondary {
-      background-color: #64748b;
-    }
-    button.secondary:hover {
-      background-color: #475569;
-    }
-
-    button.danger {
-      background-color: var(--danger);
-    }
-    button.danger:hover {
-      background-color: #b91c1c;
-    }
-
-    button.small {
-      padding: 4px 8px;
-      font-size: 0.8rem;
-    }
-
-    .actions-bar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    video {
-      width: 100%;
-      max-width: 400px;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-      body {
-        background: white;
-        padding: 0;
-      }
-      .card {
-        box-shadow: none;
-        padding: 0;
-      }
-    }
-  </style>
-</head>
-<body>
-
-<div class="container">
-  <header>
-    <h1>نظام استلام الأصناف والمخزون</h1>
-    <div class="no-print">
-      <button onclick="window.print()">طباعة التقرير</button>
-      <button class="secondary" onclick="exportExcel()">تصدير Excel</button>
-    </div>
-  </header>
-
-  <!-- إعدادات الإذن وبياناته -->
-  <div class="card">
-    <h2 style="font-size: 1.1rem; margin-bottom: 15px;">بيانات الإذن</h2>
-    <div class="grid">
-      <div class="form-group">
-        <label for="docNo">رقم الإذن / التحويل</label>
-        <input type="text" id="docNo" placeholder="أدخل رقم الإذن">
-      </div>
-      <div class="form-group">
-        <label for="recDate">تاريخ الاستلام</label>
-        <input type="date" id="recDate">
-      </div>
-      <div class="form-group">
-        <label for="sender">الجهة المرسلة</label>
-        <input type="text" id="sender" placeholder="المرسل">
-      </div>
-      <div class="form-group">
-        <label for="receiver">الجهة المستلمة</label>
-        <input type="text" id="receiver" placeholder="المستلم">
-      </div>
-      <div class="form-group">
-        <label for="receiverName">اسم أمين المخزن</label>
-        <input type="text" id="receiverName" placeholder="الاسم">
-      </div>
-      <div class="form-group">
-        <label for="expiryMode">تفعيل تتبع الصلاحية</label>
-        <select id="expiryMode">
-          <option value="yes">نعم</option>
-          <option value="no">لا</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- لوحة الإحصائيات -->
-  <div class="stats-grid">
-    <div class="stat-box">
-      <h3 id="totalItems">0</h3>
-      <p>إجمالي الأصناف</p>
-    </div>
-    <div class="stat-box success">
-      <h3 id="receivedItems">0</h3>
-      <p>تم استلامها</p>
-    </div>
-    <div class="stat-box warning">
-      <h3 id="shortItems">0</h3>
-      <p>عجز</p>
-    </div>
-    <div class="stat-box warning">
-      <h3 id="overItems">0</h3>
-      <p>زيادة</p>
-    </div>
-    <div class="stat-box danger">
-      <h3 id="expiredItems">0</h3>
-      <p>منتهي الصلاحية</p>
-    </div>
-    <div class="stat-box warning">
-      <h3 id="halfItems">0</h3>
-      <p>تخطت نصف المدة</p>
-    </div>
-  </div>
-
-  <!-- أدوات البحث والاستيراد -->
-  <div class="card no-print">
-    <div class="actions-bar">
-      <div class="form-group" style="flex: 1; min-width: 200px;">
-        <label for="barcodeSearch">البحث السريع بالباركود (أو آخر 4 أرقام)</label>
-        <input type="text" id="barcodeSearch" placeholder="امسح الباركود أو اكتبه واضغط Enter">
-      </div>
-      <div style="display: flex; align-items: flex-end; gap: 10px;">
-        <button type="button" onclick="startCamera()" class="secondary">فتح الكاميرا</button>
-        <button type="button" onclick="clearAll()" class="danger">مسح الكل</button>
-      </div>
-    </div>
-    <div id="cameraContainer" class="hidden">
-      <video id="camera" autoplay playsinline></video>
-      <p id="cameraMessage" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;"></p>
-      <button type="button" onclick="stopCamera()" class="small secondary" style="margin-top: 5px;">إيقاف الكاميرا</button>
-    </div>
-
-    <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-
-    <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-      <div class="form-group" style="flex: 1; min-width: 250px;">
-        <label for="excelFile">استيراد من ملف Excel (الإذن الأصلي)</label>
-        <input type="file" id="excelFile" accept=".xlsx, .xls">
-      </div>
-      <button type="button" onclick="importExcel()">استيراد الملف</button>
-    </div>
-  </div>
-
-  <!-- إضافة صنف يدوياً -->
-  <div class="card no-print">
-    <h2 style="font-size: 1.1rem; margin-bottom: 15px;">إضافة صنف يدويًا</h2>
-    <div class="grid">
-      <div class="form-group">
-        <label for="newBarcode">الباركود</label>
-        <input type="text" id="newBarcode">
-      </div>
-      <div class="form-group">
-        <label for="newCode">كود الصنف</label>
-        <input type="text" id="newCode">
-      </div>
-      <div class="form-group">
-        <label for="newName">اسم الصنف</label>
-        <input type="text" id="newName">
-      </div>
-      <div class="form-group">
-        <label for="newReq">الكمية المطلوبة</label>
-        <input type="number" id="newReq" value="0">
-      </div>
-      <div class="form-group">
-        <label for="newDocQty">كمية الإذن الفعلية</label>
-        <input type="number" id="newDocQty" value="0">
-      </div>
-      <div class="form-group">
-        <label for="newBonus">البونص</label>
-        <input type="number" id="newBonus" value="0">
-      </div>
-    </div>
-    <button type="button" onclick="addItem()">إضافة الصنف للقائمة</button>
-  </div>
-
-  <!-- جدول الأصناف الرئيسية -->
-  <div class="card">
-    <h2 style="font-size: 1.1rem; margin-bottom: 15px;">قائمة الأصناف والأطراف</h2>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>الباركود</th>
-            <th>الكود</th>
-            <th>اسم الصنف</th>
-            <th>المطلوب</th>
-            <th>الإذن</th>
-            <th>بونص</th>
-            <th>المستلم</th>
-            <th>الفارق</th>
-            <th>الصلاحية</th>
-            <th>الحالة</th>
-            <th class="no-print">إجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="itemsBody">
-          <!-- تُعبأ برمجياً -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- التقارير الفرعية (عجز/زيادة وصلاحيات) -->
-  <div class="grid">
-    <div class="card">
-      <h3 style="font-size: 1rem; margin-bottom: 10px; color: var(--warning);">تقرير العجز والزيادة</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>الباركود</th>
-              <th>الاسم</th>
-              <th>المتوقع</th>
-              <th>المستلم</th>
-              <th>الفارق</th>
-              <th>النوع</th>
-            </tr>
-          </thead>
-          <tbody id="diffBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3 style="font-size: 1rem; margin-bottom: 10px; color: var(--danger);">تقرير تواريخ الصلاحية</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>الباركود</th>
-              <th>الاسم</th>
-              <th>تاريخ الانتهاء</th>
-              <th>الحالة</th>
-            </tr>
-          </thead>
-          <tbody id="expiredBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3 style="font-size: 1rem; margin-bottom: 10px; color: var(--warning);">الأصناف التي تخطت نصف المدة</h3>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>الباركود</th>
-            <th>الاسم</th>
-            <th>تاريخ الانتهاء</th>
-            <th>مدة الصلاحية</th>
-            <th>الحالة</th>
-          </tr>
-        </thead>
-        <tbody id="halfBody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<script>
-const STORAGE_KEY = 'store_receiving_system_data_v1';
-let items = [];
-let cameraStream = null;
-let cameraTimer = null;
-
-const $ = id => document.getElementById(id);
-const num = val => Number(val) || 0;
-const text = val => String(val || '').trim();
-const normalizeBarcode = val => String(val || '').replace(/[\s\t\r\n]/g, '');
-const newId = () => '_' + Math.random().toString(36).substr(2, 9);
-
-function saveData() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      items,
-      meta: {
-        docNo: $('docNo').value,
-        recDate: $('recDate').value,
-        sender: $('sender').value,
-        receiver: $('receiver').value,
-        receiverName: $('receiverName').value,
-        expiryMode: $('expiryMode').value
-      }
-    }));
-  } catch (e) {
-    alert('تعذر حفظ البيانات على الجهاز. صدّر نسخة Excel للاحتفاظ بها.');
-  }
-}
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    items = Array.isArray(data.items) ? data.items : [];
-    const m = data.meta || {};
-    ['docNo','recDate','sender','receiver','receiverName','expiryMode']
-      .forEach(k => {
-        if (m[k] !== undefined) $(k).value = m[k];
-      });
-  } catch (e) {
-    alert('تعذر قراءة البيانات المحفوظة.');
-  }
-}
-
-function expiryStatus(item) {
-  if ($('expiryMode').value === 'no') return 'غير مطلوب';
-  if (!item.expiry) return 'غير مسجل';
-
-  const [year, month] = item.expiry.split('-').map(Number);
-  if (!year || !month || month < 1 || month > 12) return 'تاريخ غير صحيح';
-
-  const recValue = $('recDate').value;
-  const rec = recValue ? new Date(recValue + 'T12:00:00') : new Date();
-
-  const end = new Date(year, month, 0, 23, 59, 59);
-  if (end < rec) return 'منتهي الصلاحية';
-
-  const remaining =
-    (year - rec.getFullYear()) * 12 +
-    (month - 1 - rec.getMonth());
-
-  const total = Math.max(1, Number(item.shelfLifeYears || 2) * 12);
-
-  if (remaining <= total / 2) return 'تخطت نصف المدة';
-  return 'سارية';
-}
-
-function statusBadge(status) {
-  if (status === 'منتهي الصلاحية') return 'bad';
-  if (status === 'تخطت نصف المدة' || status === 'غير مسجل') return 'warn';
-  if (status === 'سارية') return 'ok';
-  return '';
-}
-
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, ch => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;',
-    '"':'&quot;', "'":'&#39;'
-  }[ch]));
-}
-
-function render() {
-  const body = $('itemsBody');
-  body.innerHTML = '';
-
-  let received = 0, shortage = 0, overage = 0;
-  let expired = 0, half = 0;
-  const diffs = [], expiredRows = [], halfRows = [];
-
-  items.forEach((item, index) => {
-    const expected = num(item.docQty) + num(item.bonusQty);
-    const receivedQty = item.recQty === null || item.recQty === undefined
-      ? null : num(item.recQty);
-    const diff = receivedQty === null ? null : receivedQty - expected;
-    const status = expiryStatus(item);
-
-    if (receivedQty !== null) received++;
-    if (diff !== null && diff < 0) shortage++;
-    if (diff !== null && diff > 0) overage++;
-    if (status === 'منتهي الصلاحية') expired++;
-    if (status === 'تخطت نصف المدة') half++;
-
-    body.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${escapeHTML(item.barcode)}</td>
-        <td>${escapeHTML(item.code)}</td>
-        <td>${escapeHTML(item.name)}</td>
-        <td>${num(item.reqQty)}</td>
-        <td>${num(item.docQty)}</td>
-        <td>${num(item.bonusQty)}</td>
-        <td>${receivedQty === null ? 'لم يستلم' : receivedQty}</td>
-        <td>${diff === null ? '—' : diff}</td>
-        <td>${escapeHTML(item.expiry || '—')}</td>
-        <td><span class="badge ${statusBadge(status)}">${escapeHTML(status)}</span></td>
-        <td class="no-print">
-          <button class="small" onclick="receiveItem('${item.id}')">استلام</button>
-          <button class="small secondary" onclick="editItem('${item.id}')">تعديل</button>
-          <button class="small danger" onclick="deleteItem('${item.id}')">حذف</button>
-        </td>
-      </tr>
-    `);
-
-    if (diff !== null && diff !== 0) {
-      diffs.push({item, expected, receivedQty, diff});
-    }
-    if (status === 'منتهي الصلاحية') expiredRows.push(item);
-    if (status === 'تخطت نصف المدة') halfRows.push(item);
-  });
-
-  $('totalItems').textContent = items.length;
-  $('receivedItems').textContent = received;
-  $('shortItems').textContent = shortage;
-  $('overItems').textContent = overage;
-  $('expiredItems').textContent = expired;
-  $('halfItems').textContent = half;
-
-  $('diffBody').innerHTML = diffs.map(({item,expected,receivedQty,diff}) => `
-    <tr>
-      <td>${escapeHTML(item.barcode)}</td>
-      <td>${escapeHTML(item.name)}</td>
-      <td>${expected}</td>
-      <td>${receivedQty}</td>
-      <td>${diff}</td>
-      <td>${diff < 0 ? 'عجز' : 'زيادة'}</td>
-    </tr>
-  `).join('');
-
-  const expiryRow = item => `
-    <tr>
-      <td>${escapeHTML(item.barcode)}</td>
-      <td>${escapeHTML(item.name)}</td>
-      <td>${escapeHTML(item.expiry || '—')}</td>
-      <td>${escapeHTML(expiryStatus(item))}</td>
-    </tr>`;
-
-  $('expiredBody').innerHTML = expiredRows.map(expiryRow).join('');$('halfBody').innerHTML = halfRows.map(item => `
-    <tr>
-      <td>${escapeHTML(item.barcode)}</td>
-      <td>${escapeHTML(item.name)}</td>
-      <td>${escapeHTML(item.expiry || '—')}</td>
-      <td>${num(item.shelfLifeYears)} سنة</td>
-      <td>تخطت نصف المدة</td>
-    </tr>
-  `).join('');
-
-  saveData();
-}
-
-function addItem() {
-  const barcode = normalizeBarcode($('newBarcode').value);
-  const name = text($('newName').value);
-
-  if (!barcode || !name) {
-    alert('اكتب الباركود واسم الصنف.');
-    return;
-  }
-
-  items.push({
-    id: newId(),
-    barcode,
-    code: text($('newCode').value),
-    name,
-    reqQty: num($('newReq').value),
-    docQty: num($('newDocQty').value),
-    bonusQty: num($('newBonus').value),
-    recQty: null,
-    expiry: '',
-    shelfLifeYears: 2
-  });
-
-  ['newBarcode','newCode','newName'].forEach(id => $(id).value = '');$('newReq').value = '0';
-  $('newDocQty').value = '0';$('newBonus').value = '0';
-  render();
-}
-
-function editItem(id) {
-  const item = items.find(x => x.id === id);
-  if (!item) return;
-
-  const name = prompt('اسم الصنف:', item.name);
-  if (name === null) return;
-  const barcode = prompt('الباركود:', item.barcode);
-  if (barcode === null) return;
-  const req = prompt('الكمية المطلوبة:', item.reqQty);
-  if (req === null) return;
-  const doc = prompt('كمية الإذن الفعلية:', item.docQty);
-  if (doc === null) return;
-  const bonus = prompt('كمية البونص:', item.bonusQty);
-  if (bonus === null) return;
-
-  if ([req, doc, bonus].some(v => v.trim() === '' || !Number.isFinite(Number(v)) || Number(v) < 0)) {
-    alert('الكميات يجب أن تكون أرقامًا غير سالبة.');
-    return;
-  }
-
-  item.name = name.trim();
-  item.barcode = normalizeBarcode(barcode);
-  item.reqQty = num(req);
-  item.docQty = num(doc);
-  item.bonusQty = num(bonus);
-  render();
-}
-
-function deleteItem(id) {
-  if (!confirm('هل تريد حذف هذا الصنف؟')) return;
-  items = items.filter(x => x.id !== id);
-  render();
-}
-
-function receiveItem(id) {
-  const item = items.find(x => x.id === id);
-  if (!item) return;
-
-  const qty = prompt('الكمية المستلمة فعليًا:', item.recQty ?? item.docQty + item.bonusQty);
-  if (qty === null) return;
-  if (qty.trim() === '' || !Number.isFinite(Number(qty)) || Number(qty) < 0) {
-    alert('أدخل كمية صحيحة.');
-    return;
-  }
-
-  item.recQty = num(qty);
-
-  if ($('expiryMode').value === 'yes') {
-    const expiry = prompt('تاريخ الانتهاء بصيغة YYYY-MM:', item.expiry || '');
-    if (expiry === null) return;
-    if (expiry && !/^\d{4}-(0[1-9]|1[0-2])$/.test(expiry)) {
-      alert('اكتب تاريخ الانتهاء بالشكل 2027-05 مثلًا.');
-      return;
-    }
-
-    const years = prompt('مدة الصلاحية الأصلية بالسنوات:', item.shelfLifeYears || 2);
-    if (years === null) return;
-    if (!Number.isFinite(Number(years)) || Number(years) <= 0) {
-      alert('مدة الصلاحية يجب أن تكون أكبر من صفر.');
-      return;
-    }
-
-    item.expiry = expiry;
-    item.shelfLifeYears = Number(years);
-  }
-
-  render();
-}
-
-function searchBarcode() {
-  const value = normalizeBarcode($('barcodeSearch').value);
-  if (!value) return;
-
-  const last4 = value.slice(-4);
-  if (last4.length < 4) {
-    alert('أدخل آخر 4 أرقام على الأقل.');
-    return;
-  }
-
-  const matches = items.filter(item =>
-    normalizeBarcode(item.barcode).slice(-4) === last4
-  );
-
-  if (matches.length === 1) {
-    receiveItem(matches[0].id);
-    $('barcodeSearch').value = '';
-  } else if (matches.length > 1) {
-    alert('أكثر من صنف له نفس آخر 4 أرقام. ابحث بالباركود الكامل.');
-  } else {
-    alert('الصنف غير موجود في الإذن.');
-  }
-}
-
-$('barcodeSearch').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    searchBarcode();
-  }
-});
-
-async function importExcel() {
-  const file = $('excelFile').files[0];
-  if (!file) return alert('اختر ملف Excel أولًا.');
-  if (typeof XLSX === 'undefined') {
-    return alert('مكتبة Excel لم تُحمّل. اتصل بالإنترنت ثم أعد فتح الصفحة.');
-  }
-
-  try {
-    const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, {type:'array', cellText:false, cellDates:false});
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, {
-      header:1, defval:'', raw:true
-    });
-
-    const imported = [];
-
-    for (const row of rows) {
-      const barcode = normalizeBarcode(row[23]);
-      const name = text(row[10]);
-
-      if (!barcode || !name) continue;
-
-      imported.push({
-        id: newId(),
-        barcode,
-        code: normalizeBarcode(row[26]),
-        name,
-        docQty: num(row[0]),
-        bonusQty: num(row[3]),
-        reqQty: num(row[5]),
-        recQty: null,
-        expiry: '',
-        shelfLifeYears: 2
-      });
-    }
-
-    if (!imported.length) {
-      return alert('لم يتم العثور على أصناف في الأعمدة المحددة.');
-    }
-
-    if (!confirm(`تم العثور على ${imported.length} صنفًا. استبدال الإذن الحالي؟`)) return;
-
-    items = imported;
-    render();
-    alert('تم استيراد الأصناف. راجع الكميات والباركود قبل بدء الاستلام.');
-  } catch (e) {
-    alert('تعذر قراءة الملف: ' + e.message);
-  }
-}
-
-function exportExcel() {
-  if (typeof XLSX === 'undefined') {
-    return alert('مكتبة Excel لم تُحمّل. اتصل بالإنترنت ثم أعد المحاولة.');
-  }
-  if (!items.length) return alert('لا توجد أصناف للتصدير.');
-
-  const rows = items.map(item => ({
-    'الباركود': String(item.barcode),
-    'كود الصنف': String(item.code || ''),
-    'اسم الصنف': item.name,
-    'الكمية المطلوبة': num(item.reqQty),
-    'كمية الإذن الفعلية': num(item.docQty),
-    'البونص': num(item.bonusQty),
-    'إجمالي الإذن شامل البونص': num(item.docQty) + num(item.bonusQty),
-    'المستلم فعليًا': item.recQty ?? '',
-    'الفارق عن الإذن شامل البونص':
-      item.recQty === null ? '' : num(item.recQty) - num(item.docQty) - num(item.bonusQty),
-    'تاريخ الانتهاء': item.expiry || '',
-    'حالة الصلاحية': expiryStatus(item)
-  }));
-
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, 'تقرير الاستلام');
-  XLSX.writeFile(wb, `استلام-${$('docNo').value || 'تحويل'}.xlsx`);
-}
-
-function clearAll() {
-  if (!confirm('مسح الأصناف وبيانات الإذن الحالي؟ تأكد من تصدير نسخة احتياطية أولًا.')) return;
-  items = [];
-  render();
-}
-
-if (!$('recDate').value) {$('recDate').value = new Date().toLocaleDateString('en-CA');
-}
-
-['docNo','recDate','sender','receiver','receiverName','expiryMode'].forEach(id => {
-  $(id).addEventListener('change', render);
-});
-
-async function startCamera() {
-  if (!('BarcodeDetector' in window)) {
-    $('cameraMessage').textContent =
-      'متصفحك لا يدعم قراءة الباركود بالكاميرا هنا. استخدم قارئًا خارجيًا أو متصفحًا يدعم BarcodeDetector.';
-    $('cameraContainer').classList.remove('hidden');
-    return;
-  }
-
-  try {
-    const detector = new BarcodeDetector({
-      formats: ['ean_13','ean_8','code_128','upc_a','upc_e']
-    });
-
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: {facingMode:'environment'}
-    });
-
-    const video = $('camera');
-    video.srcObject = cameraStream;
-    $('cameraContainer').classList.remove('hidden');
-    video.classList.remove('hidden');
-    await video.play();
-    $('cameraMessage').textContent = 'وجّه الكاميرا إلى الباركود.';
-
-    const scan = async () => {
-      if (!cameraStream || video.readyState < 2) return;
-
-      try {
-        const codes = await detector.detect(video);
-        if (codes.length) {
-          $('barcodeSearch').value = codes[0].rawValue;
-          stopCamera();
-          searchBarcode();
-          return;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أسواق فتح الله ماركت - نظام استلام التحويلات</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (XLSX) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- HTML5 QRCode Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+        .bg-primary { background-color: #ea580c; }
+        .text-primary { color: #ea580c; }
+        #reader video { border-radius: 0.75rem; object-fit: cover; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #000 !important; padding: 6px !important; text-align: right; }
         }
-      } catch (e) {}
-
-      cameraTimer = setTimeout(scan, 300);
-    };
-
-    scan();
-  } catch (e) {
-    $('cameraContainer').classList.remove('hidden');$('cameraMessage').textContent =
-      'تعذر تشغيل الكاميرا. تأكد من إذن الكاميرا وأن الصفحة تعمل عبر اتصال آمن.';
-  }
-}
-
-function stopCamera() {
-  if (cameraTimer) clearTimeout(cameraTimer);
-  cameraTimer = null;
-
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(track => track.stop());
-  }
-  cameraStream = null;
-  $('camera').srcObject = null;
-  $('camera').classList.add('hidden');$('cameraContainer').classList.add('hidden');
-}
-
-loadData();
-render();
-</script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام استلام الأصناف</title>
-  <!-- مكتبة قراءة وتصدير ملفات Excel -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --success: #16a34a;
-      --warning: #ca8a04;
-      --danger: #dc2626;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      padding: 20px;
-      line-height: 1.5;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      background: var(--card-bg);
-      padding: 15px 20px;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      color: var(--primary);
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 5px;
-      color: var(--text-muted);
-    }
-
-    input, select {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--primary);
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .stat-box {
-      background: var(--card-bg);
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border-top: 4px solid var(--primary);
-    }
-
-    .stat-box.success { border-top-color: var(--success); }
-    .stat-box.warning { border-top-color: var(--warning); }
-    .stat-box.danger { border-top-color: var(--danger); }
-
-    .stat-box h3 {
-      font-size: 1.5rem;
-      margin-bottom: 5px;
-    }
-
-    .stat-box p {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .table-container {
-      overflow-x: auto;
-      margin-bottom: 20px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: right;
-      font-size: 0.9rem;
-    }
-
-    th, td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      background-color: #f1f5f9;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    tr:hover {
-      background-color: #f8fafc;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .badge.ok { background: #dcfce7; color: var(--success); }
-    .badge.warn { background: #fef9c3; color: var(--warning); }
-    .badge.bad { background: #fee2e2; color: var(--danger); }
-
-    button {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: background-color 0.2s;
-    }
-
-    button:hover {
-      background-color: var(--primary-dark);
-    }
-
-    button.secondary {
-      background-color: #64748b;
-    }
-    button.secondary:hover {
-      background-color: #475569;
-    }
-
-    button.danger {
-      background-color: var(--danger);
-    }
-    button.danger:hover {
-      background-color: #b91c1c;
-    }
-
-    button.small {
-      padding: 4px 8px;
-      font-size: 0.8rem;
-    }
-
-    .actions-bar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    video {
-      width: 100%;
-      max-width: 400px;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-      body {
-        background: white;
-        padding: 0;
-      }
-      .card {
-        box-shadow: none;
-        padding: 0;
-      }
-    }
-  </style>
+    </style>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col p-4">
 
-<div class="container">
-  <header>
-    <h1>نظام استلام الأصناف والمخزون</h1>
-    <div class="no-print">
-      <button onclick="window.print()">طباعة التقرير</button>
-      <button class="secondary" onclick="exportExcel()">تصدير Excel</button>
+    <!-- Header -->
+    <header class="bg-slate-800 text-white p-4 rounded-2xl shadow-xl flex justify-between items-center mb-6 max-w-6xl mx-auto w-full border border-slate-700 no-print">
+        <div class="flex items-center space-x-3 space-x-reverse">
+            <!-- اللوجو مع معالجة ذكية للأخطاء -->
+            <img src="63703.png" alt="Fathalla Logo" 
+                 onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23ea580c\'/><text x=\'50\' y=\'70\' font-size=\'65\' font-family=\'Arial\' font-weight=\'bold\' fill=\'white\' text-anchor=\'middle\'>F</text></svg>'" 
+                 class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
+            <div>
+                <h1 class="font-extrabold text-xl text-orange-500 tracking-wide">أسواق فتح الله ماركت</h1>
+                <p class="text-xs text-slate-400 font-semibold mt-1">نظام استلام وتفريغ التحويلات (نسخة الجرد والصلاحيات)</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl w-full mx-auto flex-1 flex flex-col gap-6">
+
+        <!-- Gateway / Setup -->
+        <section id="uploadGateway" class="bg-slate-800 rounded-2xl p-6 md:p-8 text-center max-w-2xl mx-auto w-full border border-slate-700 shadow-2xl no-print">
+            <h2 class="text-2xl font-extrabold mb-1 text-orange-400">بيانات إذن التحويل والتفريغ</h2>
+            <p class="text-slate-400 text-xs mb-6">يتم قراءة الكمية الفعلية والباركود مباشرة من شيت إذن الصرف</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-right mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-700 text-xs">
+                <div>
+                    <label class="block font-bold mb-1">رقم إذن التحويل *</label>
+                    <input type="text" id="inputDocNo" value="3285" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white font-bold focus:outline-none focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">تاريخ إذن الاستلام المرجعي *</label>
+                    <input type="date" id="inputRecDate" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-orange-400 font-bold focus:outline-none focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">فرع الصرف *</label>
+                    <input type="text" id="inputSenderBranch" value="فرع سموحة" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">فرع الاستلام *</label>
+                    <input type="text" id="inputReceiverBranch" value="عجمى ستار مخزن نيو لوجيستيك 21" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block font-bold mb-1">اسم مسئول الاستلام *</label>
+                    <input type="text" id="inputReceiverName" value="عصام بدري" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                </div>
+            </div>
+
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
+            
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="document.getElementById('excelFileInput').click()" class="bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-lg text-base hover:bg-orange-600 transition">
+                    تحميل شيت إذن الصرف (Excel)
+                </button>
+            </div>
+        </section>
+
+        <!-- Workspace -->
+        <div id="workspace" class="hidden flex-col gap-6 no-print">
+
+            <!-- Controls Panel -->
+            <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
+                <div class="relative w-full md:w-2/3 flex gap-2">
+                    <input type="text" id="barcodeSearchInput" placeholder="ادخل آخر 4 أرقام للتمرير التلقائي..." 
+                           class="w-full bg-slate-900 text-white border-2 border-orange-500 rounded-xl px-4 py-3 text-lg font-bold focus:outline-none placeholder:text-sm">
+                    <button onclick="startScanner()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-xl font-bold flex items-center gap-2 border border-slate-500 transition whitespace-nowrap">
+                        📷 كاميرا
+                    </button>
+                </div>
+                
+                <button onclick="triggerOfficialPrint()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-extrabold shadow-lg w-full md:w-auto transition">
+                    إنهاء وطباعة التقرير 🖨️
+                </button>
+            </div>
+
+            <!-- Scanner Container -->
+            <div id="scanner-container" class="hidden bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-xl relative max-w-lg mx-auto w-full">
+                <button onclick="closeScanner()" class="absolute top-2 left-2 bg-red-600 text-white w-8 h-8 rounded-full font-bold z-10">✕</button>
+                <div id="reader" class="w-full h-auto"></div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-slate-900 text-orange-400 font-bold border-b border-slate-700">
+                            <tr>
+                                <th class="p-3">م</th>
+                                <th class="p-3">الباركود الدولي</th>
+                                <th class="p-3">اسم الصنف</th>
+                                <th class="p-3">الكمية المصدرة</th>
+                                <th class="p-3">المستلمة</th>
+                                <th class="p-3">الإنتاج</th>
+                                <th class="p-3">الانتهاء</th>
+                                <th class="p-3">تقييم الصلاحية</th>
+                                <th class="p-3">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTableBody" class="divide-y divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Printable Report (A4) -->
+        <div id="printableDocument" class="hidden print-only bg-white text-black p-4">
+            <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-4">
+                <div class="text-right flex items-center gap-3">
+                    <div class="w-12 h-12 bg-black text-white font-black rounded-xl border-2 border-black flex items-center justify-center text-3xl">F</div>
+                    <div>
+                        <h1 class="text-xl font-bold">أسواق فتح الله ماركت</h1>
+                        <h2 class="text-sm font-semibold">تقرير استلام تحويل مخزني</h2>
+                    </div>
+                </div>
+                <div class="text-left font-mono text-xs">
+                    <p>رقم المستند: <span id="printDocNo" class="font-bold">--</span></p>
+                    <p>تاريخ الاستلام: <span id="printRecDate">--</span></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs border p-3 mb-4 bg-slate-50">
+                <p><strong>فرع الصرف:</strong> <span id="printSenderBranch">--</span></p>
+                <p><strong>فرع الاستلام:</strong> <span id="printReceiverBranch">--</span></p>
+                <p><strong>مسئول الاستلام:</strong> <span id="printReceiverName">--</span></p>
+            </div>
+
+            <table class="w-full text-xs text-right border-collapse mb-6">
+                <thead>
+                    <tr class="bg-slate-200">
+                        <th class="p-1 border">م</th>
+                        <th class="p-1 border">الباركود</th>
+                        <th class="p-1 border">اسم الصنف</th>
+                        <th class="p-1 border">المصدرة</th>
+                        <th class="p-1 border">المستلمة</th>
+                        <th class="p-1 border">الفارق</th>
+                        <th class="p-1 border">الإنتاج</th>
+                        <th class="p-1 border">الانتهاء</th>
+                        <th class="p-1 border">حالة الصلاحية</th>
+                    </tr>
+                </thead>
+                <tbody id="printTableBody"></tbody>
+            </table>
+
+            <div class="mt-8 pt-4 border-t border-black text-sm font-bold text-left">
+                <p>توقيع مسئول الاستلام: ........................................</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Form for Item Entry -->
+    <div id="actionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-slate-800 text-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-right border border-orange-500/50 relative">
+            <button onclick="closeActionModal()" class="absolute left-4 top-4 text-slate-400 text-lg font-bold hover:text-white">✕</button>
+            
+            <h3 id="modalItemName" class="text-lg font-extrabold text-orange-400 my-1">--</h3>
+            <p class="text-xs text-slate-400 mb-4">الباركود: <span id="modalItemBarcode" class="font-mono">--</span></p>
+
+            <form id="actionForm" onsubmit="saveItemReceiving(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold mb-1">الكمية المستلمة فعلياً</label>
+                    <input type="number" id="modalQtyInput" min="0" required class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-xl font-bold text-center text-white focus:outline-none focus:border-orange-500">
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">تاريخ الإنتاج المطبوع (شهر / سنة)</label>
+                        <input type="month" id="modalProdInput" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-lg font-bold text-center text-orange-400 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold mb-1">مدة الصلاحية الكلية للمنتج</label>
+                        <div class="grid grid-cols-5 gap-1" id="shelfLifeSelector">
+                            <button type="button" onclick="setShelfLifeYears(1)" class="years-btn bg-slate-700 text-white py-2 rounded font-bold text-xs">1 سنة</button>
+                            <button type="button" onclick="setShelfLifeYears(2)" class="years-btn bg-orange-600 text-white py-2 rounded font-bold text-xs shadow-md shadow-orange-500/30">2 سنة</button>
+                            <button type="button" onclick="setShelfLifeYears(3)" class="years-btn bg-slate-700 text-white py-2 rounded font-bold text-xs">3 سنة</button>
+                            <button type="button" onclick="setShelfLifeYears(4)" class="years-btn bg-slate-700 text-white py-2 rounded font-bold text-xs">4 سنة</button>
+                            <button type="button" onclick="setShelfLifeYears(5)" class="years-btn bg-slate-700 text-white py-2 rounded font-bold text-xs">5 سنة</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-primary hover:bg-orange-600 text-white py-3 rounded-xl font-bold shadow-lg mt-2 transition">
+                    حفظ وتأكيد الاستلام
+                </button>
+            </form>
+        </div>
     </div>
-  </header>
 
-  <!-- إعدادات الإذن وبياناته -->
-  <div class="card">
-    <h2 style="font-size: 1.1rem; margin-bottom: 15px;">بيانات الإذن</h2>
-    <div class="grid">
-      <div class="form-group">
-        <label for="docNo">رقم الإذن / التحويل</label>
-        <input type="text" id="docNo" placeholder="أدخل رقم الإذن">
-      </div>
-      <div class="form-group">
-        <label for="recDate">تاريخ الاستلام</label>
-        <input type="date" id="recDate">
-      </div>
-      <div class="form-group">
-        <label for="sender">الجهة المرسلة</label>
-        <input type="text" id="sender" placeholder="المرسل">
-      </div>
-      <div class="form-group">
-        <label for="receiver">الجهة المستلمة</label>
-        <input type="text" id="receiver" placeholder="المستلم">
-      </div>
-      <div class="form-group">
-        <label for="receiverName">اسم أمين المخزن</label>
-        <input type="text" id="receiverName" placeholder="الاسم">
-      </div>
-      <div class="form-group">
-        <label for="expiryMode">تفعيل تتبع الصلاحية</label>
-        <select id="expiryMode">
-          <option value="yes">نعم</option>
-          <option value="no">لا</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- لوحة الإحصائيات -->
-  <div class="stats-grid">
-    <div class="stat-box">
-      <h3 id="totalItems">0</h3>
-      <p>إجمالي الأصناف</p>
-    </div>
-    <div class="stat-box success">
-      <h3 id="receivedItems">0</h3>
-      <p>تم استلامها</p>
-    </div>
-    <div class="stat-box warning">
-      <h3 id="shortItems">0</h3>
-      <p>عجز</p>
-    </div>
-    <div class="stat-box warning">
-      <h3 id="overItems">0</h3>
-      <p>زيادة</p>
-    </div>
-    <div class="stat-box danger">
-      <h3 id="expiredItems">0</h3>
-      <p>منتهي الصلاحية</p>
-    </div>
-    <div class="stat-box warning">
-      <h3 id="halfItems">0</h3>
-      <p>تخطت نصف المدة</p>
-    </div>
-  </div>
-
-  <!-- أدوات البحث والاستيراد -->
-  <div class="card no-print">
-    <div class="actions-bar">
-      <div class="form-group" style="flex: 1; min-width: 200px;">
-        <label for="barcodeSearch">البحث السريع بالباركود (أو آخر 4 أرقام)</label>
-        <input type="text" id="barcodeSearch" placeholder="امسح الباركود أو اكتبه واضغط Enter">
-      </div>
-      <div style="display: flex; align-items: flex-end; gap: 10px;">
-        <button type="button" onclick="startCamera()" class="secondary">فتح الكاميرا</button>
-        <button type="button" onclick="clearAll()" class="danger">مسح الكل</button>
-      </div>
-    </div>
-    <div id="cameraContainer" class="hidden">
-      <video id="camera" autoplay playsinline></video>
-      <p id="cameraMessage" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;"></p>
-      <button type="button" onclick="stopCamera()" class="small secondary" style="margin-top: 5px;">إيقاف الكاميرا</button>
-    </div>
-
-    <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-
-    <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-      <div class="form-group" style="flex: 1; min-width: 250px;">
-        <label for="excelFile">استيراد من ملف Excel (الإذن الأصلي)</label>
-        <input type="file" id="excelFile" accept=".xlsx, .xls">
-      </div>
-      <button type="button" onclick="importExcel()">استيراد الملف</button>
-    </div>
-  </div>
-
-  <!-- إضافة صنف يدوياً -->
-  <div class="card no-print">
-    <h2 style="font-size: 1.1rem; margin-bottom: 15px;">إضافة صنف يدويًا</h2>
-    <div class="grid">
-      <div class="form-group">
-        <label for="newBarcode">الباركود</label>
-        <input type="text" id="newBarcode">
-      </div>
-      <div class="form-group">
-        <label for="newCode">كود الصنف</label>
-        <input type="text" id="newCode">
-      </div>
-      <div class="form-group">
-        <label for="newName">اسم الصنف</label>
-        <input type="text" id="newName">
-      </div>
-      <div class="form-group">
-        <label for="newReq">الكمية المطلوبة</label>
-        <input type="number" id="newReq" value="0">
-      </div>
-      <div class="form-group">
-        <label for="newDocQty">كمية الإذن الفعلية</label>
-        <input type="number" id="newDocQty" value="0">
-      </div>
-      <div class="form-group">
-        <label for="newBonus">البونص</label>
-        <input type="number" id="newBonus" value="0">
-      </div>
-    </div>
-    <button type="button" onclick="addItem()">إضافة الصنف للقائمة</button>
-  </div>
-
-  <!-- جدول الأصناف الرئيسية -->
-  <div class="card">
-    <h2 style="font-size: 1.1rem; margin-bottom: 15px;">قائمة الأصناف والأطراف</h2>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>الباركود</th>
-            <th>الكود</th>
-            <th>اسم الصنف</th>
-            <th>المطلوب</th>
-            <th>الإذن</th>
-            <th>بونص</th>
-            <th>المستلم</th>
-            <th>الفارق</th>
-            <th>الصلاحية</th>
-            <th>الحالة</th>
-            <th class="no-print">إجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="itemsBody">
-          <!-- تُعبأ برمجياً -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- التقارير الفرعية (عجز/زيادة وصلاحيات) -->
-  <div class="grid">
-    <div class="card">
-      <h3 style="font-size: 1rem; margin-bottom: 10px; color: var(--warning);">تقرير العجز والزيادة</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>الباركود</th>
-              <th>الاسم</th>
-              <th>المتوقع</th>
-              <th>المستلم</th>
-              <th>الفارق</th>
-              <th>النوع</th>
-            </tr>
-          </thead>
-          <tbody id="diffBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3 style="font-size: 1rem; margin-bottom: 10px; color: var(--danger);">تقرير تواريخ الصلاحية</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>الباركود</th>
-              <th>الاسم</th>
-              <th>تاريخ الانتهاء</th>
-              <th>الحالة</th>
-            </tr>
-          </thead>
-          <tbody id="expiredBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3 style="font-size: 1rem; margin-bottom: 10px; color: var(--warning);">الأصناف التي تخطت نصف المدة</h3>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>الباركود</th>
-            <th>الاسم</th>
-            <th>تاريخ الانتهاء</th>
-            <th>مدة الصلاحية</th>
-            <th>الحالة</th>
-          </tr>
-        </thead>
-        <tbody id="halfBody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<script>
-const STORAGE_KEY = 'store_receiving_system_data_v1';
-let items = [];
-let cameraStream = null;
-let cameraTimer = null;
-
-const $ = id => document.getElementById(id);
-const num = val => Number(val) || 0;
-const text = val => String(val || '').trim();
-const normalizeBarcode = val => String(val || '').replace(/[\s\t\r\n]/g, '');
-const newId = () => '_' + Math.random().toString(36).substr(2, 9);
-
-function saveData() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      items,
-      meta: {
-        docNo: $('docNo').value,
-        recDate: $('recDate').value,
-        sender: $('sender').value,
-        receiver: $('receiver').value,
-        receiverName: $('receiverName').value,
-        expiryMode: $('expiryMode').value
-      }
-    }));
-  } catch (e) {
-    alert('تعذر حفظ البيانات على الجهاز. صدّر نسخة Excel للاحتفاظ بها.');
-  }
-}
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    items = Array.isArray(data.items) ? data.items : [];
-    const m = data.meta || {};
-    ['docNo','recDate','sender','receiver','receiverName','expiryMode']
-      .forEach(k => {
-        if (m[k] !== undefined) $(k).value = m[k];
-      });
-  } catch (e) {
-    alert('تعذر قراءة البيانات المحفوظة.');
-  }
-}
-
-function expiryStatus(item) {
-  if ($('expiryMode').value === 'no') return 'غير مطلوب';
-  if (!item.expiry) return 'غير مسجل';
-
-  const [year, month] = item.expiry.split('-').map(Number);
-  if (!year || !month || month < 1 || month > 12) return 'تاريخ غير صحيح';
-
-  const recValue = $('recDate').value;
-  const rec = recValue ? new Date(recValue + 'T12:00:00') : new Date();
-
-  const end = new Date(year, month, 0, 23, 59, 59);
-  if (end < rec) return 'منتهي الصلاحية';
-
-  const remaining =
-    (year - rec.getFullYear()) * 12 +
-    (month - 1 - rec.getMonth());
-
-  const total = Math.max(1, Number(item.shelfLifeYears || 2) * 12);
-
-  if (remaining <= total / 2) return 'تخطت نصف المدة';
-  return 'سارية';
-}
-
-function statusBadge(status) {
-  if (status === 'منتهي الصلاحية') return 'bad';
-  if (status === 'تخطت نصف المدة' || status === 'غير مسجل') return 'warn';
-  if (status === 'سارية') return 'ok';
-  return '';
-}
-
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, ch => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;',
-    '"':'&quot;', "'":'&#39;'
-  }[ch]));
-}
-
-function render() {
-  const body = $('itemsBody');
-  body.innerHTML = '';
-
-  let received = 0, shortage = 0, overage = 0;
-  let expired = 0, half = 0;
-  const diffs = [], expiredRows = [], halfRows = [];
-
-  items.forEach((item, index) => {
-    const expected = num(item.docQty) + num(item.bonusQty);
-    const receivedQty = item.recQty === null || item.recQty === undefined
-      ? null : num(item.recQty);
-    const diff = receivedQty === null ? null : receivedQty - expected;
-    const status = expiryStatus(item);
-
-    if (receivedQty !== null) received++;
-    if (diff !== null && diff < 0) shortage++;
-    if (diff !== null && diff > 0) overage++;
-    if (status === 'منتهي الصلاحية') expired++;
-    if (status === 'تخطت نصف المدة') half++;
-
-    body.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${escapeHTML(item.barcode)}</td>
-        <td>${escapeHTML(item.code)}</td>
-        <td>${escapeHTML(item.name)}</td>
-        <td>${num(item.reqQty)}</td>
-        <td>${num(item.docQty)}</td>
-        <td>${num(item.bonusQty)}</td>
-        <td>${receivedQty === null ? 'لم يستلم' : receivedQty}</td>
-        <td>${diff === null ? '—' : diff}</td>
-        <td>${escapeHTML(item.expiry || '—')}</td>
-        <td><span class="badge ${statusBadge(status)}">${escapeHTML(status)}</span></td>
-        <td class="no-print">
-          <button class="small" onclick="receiveItem('${item.id}')">استلام</button>
-          <button class="small secondary" onclick="editItem('${item.id}')">تعديل</button>
-          <button class="small danger" onclick="deleteItem('${item.id}')">حذف</button>
-        </td>
-      </tr>
-    `);
-
-    if (diff !== null && diff !== 0) {
-      diffs.push({item, expected, receivedQty, diff});
-    }
-    if (status === 'منتهي الصلاحية') expiredRows.push(item);
-    if (status === 'تخطت نصف المدة') halfRows.push(item);
-  });
-
-  $('totalItems').textContent = items.length;
-  $('receivedItems').textContent = received;
-  $('shortItems').textContent = shortage;
-  $('overItems').textContent = overage;
-  $('expiredItems').textContent = expired;
-  $('halfItems').textContent = half;
-
-  $('diffBody').innerHTML = diffs.map(({item,expected,receivedQty,diff}) => `
-    <tr>
-      <td>${escapeHTML(item.barcode)}</td>
-      <td>${escapeHTML(item.name)}</td>
-      <td>${expected}</td>
-      <td>${receivedQty}</td>
-      <td>${diff}</td>
-      <td>${diff < 0 ? 'عجز' : 'زيادة'}</td>
-    </tr>
-  `).join('');
-
-  const expiryRow = item => `
-    <tr>
-      <td>${escapeHTML(item.barcode)}</td>
-      <td>${escapeHTML(item.name)}</td>
-      <td>${escapeHTML(item.expiry || '—')}</td>
-      <td>${escapeHTML(expiryStatus(item))}</td>
-    </tr>`;
-
-  $('expiredBody').innerHTML = expiredRows.map(expiryRow).join('');$('halfBody').innerHTML = halfRows.map(item => `
-    <tr>
-      <td>${escapeHTML(item.barcode)}</td>
-      <td>${escapeHTML(item.name)}</td>
-      <td>${escapeHTML(item.expiry || '—')}</td>
-      <td>${num(item.shelfLifeYears)} سنة</td>
-      <td>تخطت نصف المدة</td>
-    </tr>
-  `).join('');
-
-  saveData();
-}
-
-function addItem() {
-  const barcode = normalizeBarcode($('newBarcode').value);
-  const name = text($('newName').value);
-
-  if (!barcode || !name) {
-    alert('اكتب الباركود واسم الصنف.');
-    return;
-  }
-
-  items.push({
-    id: newId(),
-    barcode,
-    code: text($('newCode').value),
-    name,
-    reqQty: num($('newReq').value),
-    docQty: num($('newDocQty').value),
-    bonusQty: num($('newBonus').value),
-    recQty: null,
-    expiry: '',
-    shelfLifeYears: 2
-  });
-
-  ['newBarcode','newCode','newName'].forEach(id => $(id).value = '');$('newReq').value = '0';
-  $('newDocQty').value = '0';$('newBonus').value = '0';
-  render();
-}
-
-function editItem(id) {
-  const item = items.find(x => x.id === id);
-  if (!item) return;
-
-  const name = prompt('اسم الصنف:', item.name);
-  if (name === null) return;
-  const barcode = prompt('الباركود:', item.barcode);
-  if (barcode === null) return;
-  const req = prompt('الكمية المطلوبة:', item.reqQty);
-  if (req === null) return;
-  const doc = prompt('كمية الإذن الفعلية:', item.docQty);
-  if (doc === null) return;
-  const bonus = prompt('كمية البونص:', item.bonusQty);
-  if (bonus === null) return;
-
-  if ([req, doc, bonus].some(v => v.trim() === '' || !Number.isFinite(Number(v)) || Number(v) < 0)) {
-    alert('الكميات يجب أن تكون أرقامًا غير سالبة.');
-    return;
-  }
-
-  item.name = name.trim();
-  item.barcode = normalizeBarcode(barcode);
-  item.reqQty = num(req);
-  item.docQty = num(doc);
-  item.bonusQty = num(bonus);
-  render();
-}
-
-function deleteItem(id) {
-  if (!confirm('هل تريد حذف هذا الصنف؟')) return;
-  items = items.filter(x => x.id !== id);
-  render();
-}
-
-function receiveItem(id) {
-  const item = items.find(x => x.id === id);
-  if (!item) return;
-
-  const qty = prompt('الكمية المستلمة فعليًا:', item.recQty ?? item.docQty + item.bonusQty);
-  if (qty === null) return;
-  if (qty.trim() === '' || !Number.isFinite(Number(qty)) || Number(qty) < 0) {
-    alert('أدخل كمية صحيحة.');
-    return;
-  }
-
-  item.recQty = num(qty);
-
-  if ($('expiryMode').value === 'yes') {
-    const expiry = prompt('تاريخ الانتهاء بصيغة YYYY-MM:', item.expiry || '');
-    if (expiry === null) return;
-    if (expiry && !/^\d{4}-(0[1-9]|1[0-2])$/.test(expiry)) {
-      alert('اكتب تاريخ الانتهاء بالشكل 2027-05 مثلًا.');
-      return;
-    }
-
-    const years = prompt('مدة الصلاحية الأصلية بالسنوات:', item.shelfLifeYears || 2);
-    if (years === null) return;
-    if (!Number.isFinite(Number(years)) || Number(years) <= 0) {
-      alert('مدة الصلاحية يجب أن تكون أكبر من صفر.');
-      return;
-    }
-
-    item.expiry = expiry;
-    item.shelfLifeYears = Number(years);
-  }
-
-  render();
-}
-
-function searchBarcode() {
-  const value = normalizeBarcode($('barcodeSearch').value);
-  if (!value) return;
-
-  const last4 = value.slice(-4);
-  if (last4.length < 4) {
-    alert('أدخل آخر 4 أرقام على الأقل.');
-    return;
-  }
-
-  const matches = items.filter(item =>
-    normalizeBarcode(item.barcode).slice(-4) === last4
-  );
-
-  if (matches.length === 1) {
-    receiveItem(matches[0].id);
-    $('barcodeSearch').value = '';
-  } else if (matches.length > 1) {
-    alert('أكثر من صنف له نفس آخر 4 أرقام. ابحث بالباركود الكامل.');
-  } else {
-    alert('الصنف غير موجود في الإذن.');
-  }
-}
-
-$('barcodeSearch').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    searchBarcode();
-  }
-});
-
-async function importExcel() {
-  const file = $('excelFile').files[0];
-  if (!file) return alert('اختر ملف Excel أولًا.');
-  if (typeof XLSX === 'undefined') {
-    return alert('مكتبة Excel لم تُحمّل. اتصل بالإنترنت ثم أعد فتح الصفحة.');
-  }
-
-  try {
-    const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, {type:'array', cellText:false, cellDates:false});
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, {
-      header:1, defval:'', raw:true
-    });
-
-    const imported = [];
-
-    for (const row of rows) {
-      const barcode = normalizeBarcode(row[23]);
-      const name = text(row[10]);
-
-      if (!barcode || !name) continue;
-
-      imported.push({
-        id: newId(),
-        barcode,
-        code: normalizeBarcode(row[26]),
-        name,
-        docQty: num(row[0]),
-        bonusQty: num(row[3]),
-        reqQty: num(row[5]),
-        recQty: null,
-        expiry: '',
-        shelfLifeYears: 2
-      });
-    }
-
-    if (!imported.length) {
-      return alert('لم يتم العثور على أصناف في الأعمدة المحددة.');
-    }
-
-    if (!confirm(`تم العثور على ${imported.length} صنفًا. استبدال الإذن الحالي؟`)) return;
-
-    items = imported;
-    render();
-    alert('تم استيراد الأصناف. راجع الكميات والباركود قبل بدء الاستلام.');
-  } catch (e) {
-    alert('تعذر قراءة الملف: ' + e.message);
-  }
-}
-
-function exportExcel() {
-  if (typeof XLSX === 'undefined') {
-    return alert('مكتبة Excel لم تُحمّل. اتصل بالإنترنت ثم أعد المحاولة.');
-  }
-  if (!items.length) return alert('لا توجد أصناف للتصدير.');
-
-  const rows = items.map(item => ({
-    'الباركود': String(item.barcode),
-    'كود الصنف': String(item.code || ''),
-    'اسم الصنف': item.name,
-    'الكمية المطلوبة': num(item.reqQty),
-    'كمية الإذن الفعلية': num(item.docQty),
-    'البونص': num(item.bonusQty),
-    'إجمالي الإذن شامل البونص': num(item.docQty) + num(item.bonusQty),
-    'المستلم فعليًا': item.recQty ?? '',
-    'الفارق عن الإذن شامل البونص':
-      item.recQty === null ? '' : num(item.recQty) - num(item.docQty) - num(item.bonusQty),
-    'تاريخ الانتهاء': item.expiry || '',
-    'حالة الصلاحية': expiryStatus(item)
-  }));
-
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, 'تقرير الاستلام');
-  XLSX.writeFile(wb, `استلام-${$('docNo').value || 'تحويل'}.xlsx`);
-}
-
-function clearAll() {
-  if (!confirm('مسح الأصناف وبيانات الإذن الحالي؟ تأكد من تصدير نسخة احتياطية أولًا.')) return;
-  items = [];
-  render();
-}
-
-if (!$('recDate').value) {$('recDate').value = new Date().toLocaleDateString('en-CA');
-}
-
-['docNo','recDate','sender','receiver','receiverName','expiryMode'].forEach(id => {
-  $(id).addEventListener('change', render);
-});
-
-async function startCamera() {
-  if (!('BarcodeDetector' in window)) {
-    $('cameraMessage').textContent =
-      'متصفحك لا يدعم قراءة الباركود بالكاميرا هنا. استخدم قارئًا خارجيًا أو متصفحًا يدعم BarcodeDetector.';
-    $('cameraContainer').classList.remove('hidden');
-    return;
-  }
-
-  try {
-    const detector = new BarcodeDetector({
-      formats: ['ean_13','ean_8','code_128','upc_a','upc_e']
-    });
-
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: {facingMode:'environment'}
-    });
-
-    const video = $('camera');
-    video.srcObject = cameraStream;
-    $('cameraContainer').classList.remove('hidden');
-    video.classList.remove('hidden');
-    await video.play();
-    $('cameraMessage').textContent = 'وجّه الكاميرا إلى الباركود.';
-
-    const scan = async () => {
-      if (!cameraStream || video.readyState < 2) return;
-
-      try {
-        const codes = await detector.detect(video);
-        if (codes.length) {
-          $('barcodeSearch').value = codes[0].rawValue;
-          stopCamera();
-          searchBarcode();
-          return;
+    <script>
+        let currentItems = [];
+        let selectedItemIndex = null;
+        let selectedShelfLifeYears = 2; // الافتراضي سنتين
+        let html5QrcodeScanner = null;
+
+        document.getElementById('inputRecDate').valueAsDate = new Date();
+
+        document.getElementById('excelFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, defval: ""});
+
+                    currentItems = [];
+                    
+                    for(let r = 0; r < 8; r++) {
+                        const rowStr = rawRows[r] ? rawRows[r].join(" ") : "";
+                        if(rowStr.includes("رقم المستند")) {
+                            const match = rowStr.match(/رقم المستند\s*:\s*(\d+)/);
+                            if(match) document.getElementById('inputDocNo').value = match[1];
+                        }
+                    }
+
+                    for (let r = 9; r < rawRows.length; r++) {
+                        const row = rawRows[r];
+                        if (!row || row.length < 25) continue;
+
+                        const actualQty = parseFloat(row[0]); 
+                        const name = String(row[10]).trim();  
+                        const barcode = String(row[23]).trim(); 
+                        const itemCode = String(row[26]).trim(); 
+
+                        if (barcode && barcode !== "" && !isNaN(actualQty)) {
+                            currentItems.push({
+                                id: currentItems.length,
+                                barcode: barcode,
+                                itemCode: itemCode,
+                                name: name || 'صنف غير معرف',
+                                reqQty: actualQty,
+                                recQty: 0,
+                                status: 'Unreceived',
+                                prodDate: '',
+                                expiryDate: '',
+                                shelfLifeYears: 2,
+                                expiryEvaluation: 'غير مسجل'
+                            });
+                        }
+                    }
+
+                    if(currentItems.length === 0) {
+                        alert("لم نتمكن من استخراج بيانات تحويل صحيحة من هذا الشيت.");
+                        return;
+                    }
+
+                    document.getElementById('uploadGateway').classList.add('hidden');
+                    document.getElementById('workspace').classList.remove('hidden');
+                    document.getElementById('workspace').classList.add('flex');
+                    renderTables();
+
+                } catch(err) {
+                    alert("خطأ أثناء قراءة ملف الإكسيل: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('barcodeSearchInput').addEventListener('input', function(e) {
+            triggerSearch(e.target.value.trim());
+        });
+
+        function triggerSearch(val) {
+            if(val.length >= 4) {
+                const matches = currentItems.filter(item => item.barcode.endsWith(val) || item.barcode === val);
+                if(matches.length === 1) {
+                    openActionModal(matches[0].id);
+                    document.getElementById('barcodeSearchInput').value = '';
+                }
+            }
         }
-      } catch (e) {}
 
-      cameraTimer = setTimeout(scan, 300);
-    };
+        function startScanner() {
+            document.getElementById('scanner-container').classList.remove('hidden');
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", 
+                { fps: 10, qrbox: {width: 250, height: 100}, aspectRatio: 1.0 }, 
+                false
+            );
+            html5QrcodeScanner.render(
+                function(decodedText) {
+                    closeScanner();
+                    triggerSearch(decodedText);
+                },
+                function(errorMessage) {
+                }
+            );
+        }
 
-    scan();
-  } catch (e) {
-    $('cameraContainer').classList.remove('hidden');$('cameraMessage').textContent =
-      'تعذر تشغيل الكاميرا. تأكد من إذن الكاميرا وأن الصفحة تعمل عبر اتصال آمن.';
-  }
-}
+        function closeScanner() {
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
+            }
+            document.getElementById('scanner-container').classList.add('hidden');
+        }
 
-function stopCamera() {
-  if (cameraTimer) clearTimeout(cameraTimer);
-  cameraTimer = null;
+        function openActionModal(idx) {
+            selectedItemIndex = idx;
+            const item = currentItems[idx];
+            document.getElementById('modalItemName').innerText = item.name;
+            document.getElementById('modalItemBarcode').innerText = item.barcode;
+            document.getElementById('modalQtyInput').value = item.recQty || item.reqQty;
+            
+            if(item.prodDate) document.getElementById('modalProdInput').value = item.prodDate;
+            setShelfLifeYears(item.shelfLifeYears);
+            
+            document.getElementById('actionModal').classList.remove('hidden');
+        }
 
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(track => track.stop());
-  }
-  cameraStream = null;
-  $('camera').srcObject = null;
-  $('camera').classList.add('hidden');$('cameraContainer').classList.add('hidden');
-}
+        function closeActionModal() {
+            document.getElementById('actionModal').classList.add('hidden');
+        }
 
-loadData();
-render();
-</script>
+        function setShelfLifeYears(years) {
+            selectedShelfLifeYears = years;
+            document.querySelectorAll('.years-btn').forEach((btn, idx) => {
+                if (idx + 1 === years) {
+                    btn.className = "years-btn bg-orange-600 text-white py-2 rounded font-bold text-xs shadow-md shadow-orange-500/30";
+                } else {
+                    btn.className = "years-btn bg-slate-700 text-slate-300 py-2 rounded font-bold text-xs";
+                }
+            });
+        }
+
+        function evaluateExpiryStatus(prodStr, years) {
+            if(!prodStr) return { status: 'غير مسجل', badgeClass: 'bg-slate-700 text-slate-300', expStr: '--' };
+
+            const recDateVal = document.getElementById('inputRecDate').value;
+            const recDateObj = recDateVal ? new Date(recDateVal) : new Date();
+            
+            const [prodYear, prodMonth] = prodStr.split('-').map(Number);
+            
+            const expYear = prodYear + years;
+            const expStr = `${expYear}-${String(prodMonth).padStart(2, '0')}`;
+
+            const totalShelfMonths = years * 12; 
+            
+            const passedMonths = (recDateObj.getFullYear() - prodYear) * 12 + ((recDateObj.getMonth() + 1) - prodMonth);
+
+            if (passedMonths >= totalShelfMonths) {
+                return { status: 'منتهي الصلاحية ❌', badgeClass: 'bg-red-600 text-white font-bold', expStr: expStr };
+            }
+
+            if (passedMonths >= (totalShelfMonths / 2) && passedMonths < totalShelfMonths) {
+                return { status: 'تخطت نصف المدة ⚠️', badgeClass: 'bg-amber-500 text-white font-bold', expStr: expStr };
+            }
+
+            return { status: 'سارية (مقبولة) ✅', badgeClass: 'bg-emerald-600 text-white font-bold', expStr: expStr };
+        }
+
+        function saveItemReceiving(e) {
+            e.preventDefault();
+            if(selectedItemIndex === null) return;
+
+            const qty = Number(document.getElementById('modalQtyInput').value);
+            const prod = document.getElementById('modalProdInput').value;
+
+            currentItems[selectedItemIndex].recQty = qty;
+            currentItems[selectedItemIndex].prodDate = prod;
+            currentItems[selectedItemIndex].shelfLifeYears = selectedShelfLifeYears;
+            currentItems[selectedItemIndex].status = 'Received';
+
+            if(prod) {
+                const evalRes = evaluateExpiryStatus(prod, selectedShelfLifeYears);
+                currentItems[selectedItemIndex].expiryEvaluation = evalRes.status;
+                currentItems[selectedItemIndex].expiryDate = evalRes.expStr;
+            }
+
+            closeActionModal();
+            renderTables();
+        }
+
+        function renderTables() {
+            const tbody1 = document.getElementById('itemsTableBody');
+            tbody1.innerHTML = '';
+
+            currentItems.forEach((item, idx) => {
+                const isUnreceived = item.status === 'Unreceived';
+                const evalRes = evaluateExpiryStatus(item.prodDate, item.shelfLifeYears);
+                
+                tbody1.innerHTML += `
+                    <tr>
+                        <td class="p-3 font-bold">${idx + 1}</td>
+                        <td class="p-3 font-mono font-bold text-orange-400">${item.barcode}</td>
+                        <td class="p-3 font-bold text-slate-200">${item.name}</td>
+                        <td class="p-3 font-bold text-slate-300">${item.reqQty}</td>
+                        <td class="p-3 font-bold ${isUnreceived ? 'opacity-40' : 'text-emerald-400'}">${item.recQty}</td>
+                        <td class="p-3 font-mono text-slate-400">${item.prodDate || '--'}</td>
+                        <td class="p-3 font-mono text-slate-400">${evalRes.expStr || '--'}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${evalRes.badgeClass}">${evalRes.status}</span></td>
+                        <td class="p-3"><button onclick="openActionModal(${idx})" class="bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 px-3 py-1 rounded text-xs font-bold border border-orange-500/30">استلام</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function triggerOfficialPrint() {
+            document.getElementById('printDocNo').innerText = document.getElementById('inputDocNo').value || '--';
+            document.getElementById('printRecDate').innerText = document.getElementById('inputRecDate').value || '--';
+            document.getElementById('printSenderBranch').innerText = document.getElementById('inputSenderBranch').value || '--';
+            document.getElementById('printReceiverBranch').innerText = document.getElementById('inputReceiverBranch').value || '--';
+            document.getElementById('printReceiverName').innerText = document.getElementById('inputReceiverName').value || '--';
+
+            const printTbody = document.getElementById('printTableBody');
+            printTbody.innerHTML = '';
+            
+            currentItems.forEach((item, idx) => {
+                const diff = item.recQty - item.reqQty;
+                printTbody.innerHTML += `
+                    <tr>
+                        <td class="p-1 border text-center">${idx + 1}</td>
+                        <td class="p-1 border text-center font-mono">${item.barcode}</td>
+                        <td class="p-1 border font-bold">${item.name}</td>
+                        <td class="p-1 border text-center">${item.reqQty}</td>
+                        <td class="p-1 border text-center font-bold">${item.recQty}</td>
+                        <td class="p-1 border text-center">${diff === 0 ? 'مطابق' : (diff < 0 ? 'عجز ' + diff : 'زيادة +' + diff)}</td>
+                        <td class="p-1 border text-center font-mono">${item.prodDate || '--'}</td>
+                        <td class="p-1 border text-center font-mono">${item.expiryDate || '--'}</td>
+                        <td class="p-1 border text-center">${item.expiryEvaluation || '--'}</td>
+                    </tr>
+                `;
+            });
+
+            window.print();
+        }
+    </script>
 </body>
 </html>
