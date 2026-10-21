@@ -6,7 +6,7 @@
     <title>أسواق فتح الله ماركت - نظام استلام التحويلات</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS (XLSX) -->
+    <!-- SheetJS (XLSX) - تدعم ملفات FMS Xls -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- HTML5 QRCode Scanner -->
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -31,7 +31,7 @@
     <!-- Header -->
     <header class="bg-slate-800 text-white p-4 rounded-2xl shadow-xl flex justify-between items-center mb-6 max-w-6xl mx-auto w-full border border-slate-700 no-print">
         <div class="flex items-center space-x-3 space-x-reverse">
-            <!-- اللوجو مع معالجة ذكية للأخطاء -->
+            <!-- اللوجو مع معالجة ذكية -->
             <img src="63703.png" alt="Fathalla Logo" 
                  onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23ea580c\'/><text x=\'50\' y=\'70\' font-size=\'65\' font-family=\'Arial\' font-weight=\'bold\' fill=\'white\' text-anchor=\'middle\'>F</text></svg>'" 
                  class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
@@ -53,7 +53,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-right mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-700 text-xs">
                 <div>
                     <label class="block font-bold mb-1">رقم إذن التحويل *</label>
-                    <input type="text" id="inputDocNo" value="3285" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white font-bold focus:outline-none focus:border-orange-500">
+                    <input type="text" id="inputDocNo" value="1917" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white font-bold focus:outline-none focus:border-orange-500">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">تاريخ إذن الاستلام المرجعي *</label>
@@ -73,7 +73,8 @@
                 </div>
             </div>
 
-            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
+            <!-- تم إضافة الامتداد .Xls بحروف كبيرة ليتوافق مع نظام FMS -->
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .Xls, .csv" class="hidden">
             
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <button onclick="document.getElementById('excelFileInput').click()" class="bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-lg text-base hover:bg-orange-600 transition">
@@ -85,7 +86,6 @@
         <!-- Workspace -->
         <div id="workspace" class="hidden flex-col gap-6 no-print">
 
-            <!-- Controls Panel -->
             <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
                 <div class="relative w-full md:w-2/3 flex gap-2">
                     <input type="text" id="barcodeSearchInput" placeholder="ادخل آخر 4 أرقام للتمرير التلقائي..." 
@@ -100,7 +100,6 @@
                 </button>
             </div>
 
-            <!-- Scanner Container -->
             <div id="scanner-container" class="hidden bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-xl relative max-w-lg mx-auto w-full">
                 <button onclick="closeScanner()" class="absolute top-2 left-2 bg-red-600 text-white w-8 h-8 rounded-full font-bold z-10">✕</button>
                 <div id="reader" class="w-full h-auto"></div>
@@ -217,7 +216,7 @@
     <script>
         let currentItems = [];
         let selectedItemIndex = null;
-        let selectedShelfLifeYears = 2; // الافتراضي سنتين
+        let selectedShelfLifeYears = 2; 
         let html5QrcodeScanner = null;
 
         document.getElementById('inputRecDate').valueAsDate = new Date();
