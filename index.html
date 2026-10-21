@@ -31,13 +31,13 @@
     <!-- Header -->
     <header class="bg-slate-800 text-white p-4 rounded-2xl shadow-xl flex justify-between items-center mb-6 max-w-6xl mx-auto w-full border border-slate-700 no-print">
         <div class="flex items-center space-x-3 space-x-reverse">
-            <!-- اللوجو مع المعالجة الذكية -->
+            <!-- اللوجو مع معالجة ذكية -->
             <img src="63703.png" alt="Fathalla Logo" 
                  onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23ea580c\'/><text x=\'50\' y=\'70\' font-size=\'65\' font-family=\'Arial\' font-weight=\'bold\' fill=\'white\' text-anchor=\'middle\'>F</text></svg>'" 
                  class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
             <div>
                 <h1 class="font-extrabold text-xl text-orange-500 tracking-wide">أسواق فتح الله ماركت</h1>
-                <p class="text-xs text-slate-400 font-semibold mt-1">نظام استلام وتفريغ التحويلات (النسخة الأساسية الشاملة والمصفحة)</p>
+                <p class="text-xs text-slate-400 font-semibold mt-1">نظام استلام وتفريغ التحويلات (النسخة الشاملة والمُصفّحة بالذكاء الاصطناعي)</p>
             </div>
         </div>
     </header>
@@ -123,7 +123,7 @@
                         <thead class="bg-slate-900 text-orange-400 font-bold border-b border-slate-700">
                             <tr>
                                 <th class="p-3">م</th>
-                                <th class="p-3">الباركود الدولي</th>
+                                <th class="p-3">الباركود الدولي / الكود</th>
                                 <th class="p-3">اسم الصنف</th>
                                 <th class="p-3">الكمية المصدرة</th>
                                 <th class="p-3">المستلمة</th>
@@ -239,7 +239,7 @@
 
         document.getElementById('inputRecDate').valueAsDate = new Date();
 
-        // الحل الجذري: خوارزمية الصيد الديناميكية (The Hunter Algorithm)
+        // الحل الجذري النهائي: خوارزمية الصيد والمحاصرة (Hunter Algorithm)
         document.getElementById('excelFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -252,88 +252,67 @@
                     const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, defval: ""});
 
                     currentItems = [];
-                    let colMap = { qty: 0, name: 10, barcode: 23, code: 26 }; // التوزيع الافتراضي لفتح الله
                     
-                    // استخراج رقم المستند
+                    // استخراج رقم المستند بغض النظر عن مكانه
                     for(let r = 0; r < Math.min(20, rawRows.length); r++) {
                         const rowStr = rawRows[r] ? rawRows[r].join(" ") : "";
-                        const match = rowStr.match(/رقم المستند\s*:\s*(\d+)/) || rowStr.match(/رقم الطلب\s*:\s*(\d+)/);
+                        const match = rowStr.match(/(?:المستند|الطلب)\s*:\s*(\d+)/);
                         if(match) document.getElementById('inputDocNo').value = match[1];
                     }
 
-                    // محاولة معرفة أماكن الأعمدة بدون توقف الكود إذا فشل
-                    for (let r = 0; r < Math.min(30, rawRows.length); r++) {
-                        const row = rawRows[r];
-                        if (!row) continue;
-                        let tQty = -1, tName = -1, tBarcode = -1, tCode = -1;
-                        for (let c = 0; c < row.length; c++) {
-                            const val = String(row[c]).replace(/\s+/g, '').replace(/ة/g, 'ه'); 
-                            if (val.includes("الكميهالفعليه") || val === "الكميه") tQty = c;
-                            if (val.includes("الباركود") || val === "باركود") tBarcode = c;
-                            if (val.includes("اسمالصنف") || val === "الصنف") tName = c;
-                            if (val.includes("كودالصنف")) tCode = c;
-                        }
-                        if (tBarcode !== -1) {
-                            colMap.barcode = tBarcode;
-                            if (tName !== -1) colMap.name = tName;
-                            if (tQty !== -1) colMap.qty = tQty;
-                            if (tCode !== -1) colMap.code = tCode;
-                            break; // وجدنا الهيدر!
-                        }
-                    }
-
-                    // خوارزمية سحب البيانات الإجبارية (حتى لو لم يجد هيدر)
+                    // المسح الشامل الديناميكي (بدون الاعتماد على أي أعمدة)
                     for (let r = 0; r < rawRows.length; r++) {
-                        const row = rawRows[r];
-                        if (!row || row.length < 3) continue; // تخطي الصفوف الفارغة
+                        let row = rawRows[r];
+                        if (!row) continue;
+                        if (!Array.isArray(row)) row = Object.values(row);
 
-                        let barcode = row[colMap.barcode] ? String(row[colMap.barcode]).trim() : '';
-                        let actualQty = parseFloat(row[colMap.qty]);
-                        let name = row[colMap.name] ? String(row[colMap.name]).trim() : '';
-                        let itemCode = row[colMap.code] ? String(row[colMap.code]).trim() : '';
+                        let possibleCodes = [];
+                        let name = "";
+                        let qty = 0;
 
-                        // إذا لم يجد باركود في العمود المتوقع، سيبحث في كامل الصف!
-                        if (!barcode.match(/^\d{7,15}$/)) {
-                            let found = false;
-                            for (let c = 0; c < row.length; c++) {
-                                let cell = String(row[c]).trim();
-                                if (/^\d{7,15}$/.test(cell)) {
-                                    barcode = cell;
-                                    found = true;
-                                    // تخمين الاسم إذا كان غير موجود
-                                    if (!name || name.length < 2) {
-                                        for (let c2 = 0; c2 < row.length; c2++) {
-                                            let cell2 = String(row[c2]).trim();
-                                            if (isNaN(cell2) && cell2.length > 4) { name = cell2; break; }
-                                        }
-                                    }
-                                    break;
-                                }
+                        for (let c = 0; c < row.length; c++) {
+                            let cell = String(row[c] || '').trim();
+                            if (!cell) continue;
+
+                            let digits = cell.replace(/\D/g, '');
+                            let cleanNum = cell.replace(/,/g, '');
+                            let num = parseFloat(cleanNum);
+
+                            let isBarcode = (digits.length >= 7 && digits.length <= 15 && digits === cell);
+                            let isQuantity = (!isNaN(num) && num > 0 && num <= 500000 && !isBarcode);
+                            let isName = (isNaN(num) && cell.length >= 3 && !cell.match(/^\d+$/) && !cell.includes("الكمية") && !cell.includes("الباركود") && !cell.includes("الصنف"));
+
+                            // تجميع كل الأكواد (باركود + كود صنف)
+                            if (isBarcode) {
+                                if (!possibleCodes.includes(digits)) possibleCodes.push(digits);
                             }
-                            if (!found) continue; // هذا الصف لا يحتوي على صنف
-                        }
+                            
+                            // التقاط الكمية (أول رقم إيجابي يطابق الشروط)
+                            if (isQuantity && qty === 0) {
+                                qty = num;
+                            }
 
-                        // إذا كانت الكمية غير معروفة، سيبحث عن أول رقم منطقي في بداية الصف
-                        if (isNaN(actualQty)) actualQty = parseFloat(row[0]);
-                        if (isNaN(actualQty)) {
-                            for (let c = 0; c < Math.min(5, row.length); c++) {
-                                let cellNum = parseFloat(row[c]);
-                                if (!isNaN(cellNum) && cellNum > 0) { actualQty = cellNum; break; }
+                            // التقاط اسم الصنف
+                            if (isName && !name) {
+                                name = cell;
                             }
                         }
 
-                        // إضافة الصنف إذا كان صحيحاً
-                        if (barcode && barcode.match(/^\d{6,15}$/) && !isNaN(actualQty) && actualQty > 0) {
+                        // إذا وجدنا أكواد وكمية، فهذا الصف هو صنف حقيقي!
+                        if (possibleCodes.length > 0 && qty > 0) {
+                            // نرتب الأكواد عشان نخلي الأطول (الباركود الدولي) هو الأساسي في العرض
+                            possibleCodes.sort((a, b) => b.length - a.length);
+
                             currentItems.push({
                                 id: currentItems.length,
-                                barcode: barcode,
-                                itemCode: itemCode || '--',
-                                name: name || 'صنف غير معرف',
-                                reqQty: actualQty,
+                                barcode: possibleCodes[0], // الأساسي للعرض
+                                allCodes: possibleCodes, // كل الأكواد المخفية للبحث (باركود + داخلي)
+                                name: name || 'صنف ' + possibleCodes[0],
+                                reqQty: qty,
                                 recQty: 0,
                                 status: 'Unreceived',
-                                prodDate: '',
-                                expiryDate: '',
+                                prodDate: '--',
+                                expiryDate: '--',
                                 shelfLifeYears: 2,
                                 isNoExpiry: false,
                                 expiryEvaluation: 'غير مسجل'
@@ -385,9 +364,12 @@
             triggerSearch(e.target.value.trim());
         });
 
+        // نظام البحث المطور: يبحث في كود الصنف والباركود الدولي معاً
         function triggerSearch(val) {
             if(val.length >= 4) {
-                const matches = currentItems.filter(item => item.barcode.endsWith(val) || item.barcode === val);
+                const matches = currentItems.filter(item => {
+                    return item.allCodes.some(code => code.endsWith(val) || code === val);
+                });
                 if(matches.length === 1) {
                     openActionModal(matches[0].id);
                     document.getElementById('barcodeSearchInput').value = '';
