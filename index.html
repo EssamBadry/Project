@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أسواق فتح الله ماركت - Receiving System 1.0</title>
+    <title>أسواق فتح الله ماركت - Receiving System 1.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (XLSX) -->
@@ -36,8 +36,8 @@
                  onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23ea580c\'/><text x=\'50\' y=\'70\' font-size=\'65\' font-family=\'Arial\' font-weight=\'bold\' fill=\'white\' text-anchor=\'middle\'>F</text></svg>'" 
                  class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
             <div>
-                <h1 class="font-extrabold text-2xl text-orange-500 tracking-wide">Receiving System 1.0</h1>
-                <p class="text-xs text-slate-400 font-semibold mt-1">أسواق فتح الله ماركت - نظام استلام التحويلات</p>
+                <h1 class="font-extrabold text-2xl text-orange-500 tracking-wide">Receiving System 1.1</h1>
+                <p class="text-xs text-slate-400 font-semibold mt-1">أسواق فتح الله ماركت - نظام استلام وتفريغ التحويلات</p>
             </div>
         </div>
     </header>
@@ -48,7 +48,7 @@
         <!-- Gateway / Setup -->
         <section id="uploadGateway" class="bg-slate-800 rounded-2xl p-6 md:p-8 text-center max-w-2xl mx-auto w-full border border-slate-700 shadow-2xl no-print">
             <h2 class="text-2xl font-extrabold mb-1 text-orange-400">بيانات إذن التحويل والتفريغ</h2>
-            <p class="text-slate-400 text-xs mb-6">مزود بمعالج البيانات الديناميكي للملفات التالفة</p>
+            <p class="text-slate-400 text-xs mb-6">قارئ البيانات الأفقي الديناميكي المطور</p>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-right mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-700 text-xs">
                 <div>
@@ -145,7 +145,7 @@
                 <div class="text-right flex items-center gap-3">
                     <div class="w-12 h-12 bg-black text-white font-black rounded-xl border-2 border-black flex items-center justify-center text-3xl">F</div>
                     <div>
-                        <h1 class="text-xl font-bold">Receiving System 1.0</h1>
+                        <h1 class="text-xl font-bold">Receiving System 1.1</h1>
                         <h2 class="text-sm font-semibold">تقرير استلام تحويل مخزني</h2>
                     </div>
                 </div>
@@ -239,7 +239,7 @@
 
         document.getElementById('inputRecDate').valueAsDate = new Date();
 
-        // 🚀 معالج Receiving System 1.0 (الفك الذكي ومعالجة TSV)
+        // 🚀 معالج Receiving System 1.1 (المسح الأفقي الذكي لصفوف الشيت)
         document.getElementById('excelFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -251,128 +251,88 @@
                     const workbook = XLSX.read(data, {type: 'array'});
                     let rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, defval: ""});
 
-                    // 1. معالجة الـ Tab-Separated Values التي تلتصق في خلية واحدة
-                    let processedRows = [];
+                    // 1. تفكيك أي صفوف ملتصقة بـ Tab
+                    let rows = [];
                     for (let r = 0; r < rawRows.length; r++) {
                         let rowCells = Array.isArray(rawRows[r]) ? rawRows[r] : Object.values(rawRows[r]);
                         if (rowCells.length === 1 && typeof rowCells[0] === 'string' && rowCells[0].includes('\t')) {
-                            processedRows.push(rowCells[0].split('\t'));
+                            rows.push(rowCells[0].split('\t'));
                         } else if (rowCells.length > 0) {
-                            processedRows.push(rowCells);
+                            rows.push(rowCells);
                         }
                     }
 
                     currentItems = [];
                     
-                    // 2. سحب رقم المستند
-                    for(let r = 0; r < Math.min(20, processedRows.length); r++) {
-                        const rowStr = processedRows[r].join(" ");
+                    // 2. سحب رقم المستند أفقياً
+                    for(let r = 0; r < Math.min(25, rows.length); r++) {
+                        const rowStr = rows[r].join(" ");
                         const match = rowStr.match(/(?:المستند|الطلب)\s*:\s*(\d+)/);
                         if(match) document.getElementById('inputDocNo').value = match[1];
                     }
 
-                    // 3. البحث المرن عن الأعمدة (Fuzzy Header Search)
-                    let colMap = { qty: -1, name: -1, barcode: -1, code: -1 };
-                    let headerFound = false;
+                    // 3. المسح الأفقي الذكي لجميع الخلايا في كل صف (Horizontal Row Scavenger)
+                    for (let r = 0; r < rows.length; r++) {
+                        let row = rows[r];
+                        if (!row || row.length === 0) continue;
 
-                    for (let r = 0; r < Math.min(50, processedRows.length); r++) {
-                        let rowCells = processedRows[r];
-                        let tQty = -1, tName = -1, tBarcode = -1, tCode = -1;
-                        
-                        for (let c = 0; c < rowCells.length; c++) {
-                            // تنظيف النص بالكامل لتسهيل المطابقة
-                            let cell = String(rowCells[c] || '').replace(/[\s\u200B-\u200D\uFEFF_.-]/g, '').replace(/ة/g, 'ه').replace(/أ|إ|آ/g, 'ا');
-                            if (!cell) continue;
-                            
-                            if (cell.includes("كميه") || cell.includes("فعليه") || cell.includes("صرف") || cell.includes("محول")) tQty = c;
-                            if (cell.includes("باركود") || cell.includes("دولى") || cell.includes("رقمقومي")) tBarcode = c;
-                            if ((cell.includes("اسم") || cell.includes("صنف") || cell.includes("بيان")) && !cell.includes("كود")) tName = c;
-                            if (cell === "كود" || cell.includes("كودالصنف")) tCode = c;
-                        }
-                        
-                        // لو لقينا باركود وكمية، نعتبره سطر العناوين
-                        if (tBarcode !== -1 && tQty !== -1) {
-                            colMap = { qty: tQty, name: tName, barcode: tBarcode, code: tCode };
-                            headerFound = true;
-                            break;
-                        }
-                    }
+                        let codes = [];
+                        let name = "";
+                        let qty = 0;
 
-                    // 4. استخراج الأصناف
-                    if (headerFound) {
-                        for (let r = 0; r < processedRows.length; r++) {
-                            let rowCells = processedRows[r];
-                            let barcode = String(rowCells[colMap.barcode] || '').replace(/\D/g, '');
-                            let qtyCell = String(rowCells[colMap.qty] || '').replace(/[,\s]/g, '');
-                            let name = colMap.name !== -1 ? String(rowCells[colMap.name] || '').trim() : '';
-                            let code = colMap.code !== -1 ? String(rowCells[colMap.code] || '').replace(/\D/g, '') : '';
+                        // المرور على أعمدة الصف أفقياً لاستخراج البيانات بغض النظر عن ترتيبها
+                        for (let c = 0; c < row.length; c++) {
+                            let cellVal = String(row[c] || '').trim();
+                            if (!cellVal) continue;
+
+                            let cleanDigits = cellVal.replace(/\D/g, '');
+                            let numVal = parseFloat(cellVal.replace(/[,\s]/g, ''));
+
+                            // التحقق هل الخلايا تحتوي على باركود أو كود صنف (أرقام بحتة من 6 إلى 18 خانة)
+                            let isCode = (cleanDigits.length >= 6 && cleanDigits.length <= 18 && cleanDigits === cellVal);
                             
-                            let qty = parseFloat(qtyCell);
-                            
-                            if (barcode.length >= 3 && !isNaN(qty) && qty > 0) {
-                                currentItems.push({
-                                    id: currentItems.length,
-                                    barcode: barcode,
-                                    allCodes: [barcode, code].filter(c => c && c.length >= 3),
-                                    name: name || ('صنف ' + barcode),
-                                    reqQty: qty,
-                                    recQty: 0,
-                                    status: 'Unreceived',
-                                    prodDate: '--',
-                                    expiryDate: '--',
-                                    shelfLifeYears: 2,
-                                    isNoExpiry: false,
-                                    expiryEvaluation: 'غير مسجل'
-                                });
+                            // التحقق من الكمية (أول رقم منطقي أكبر من 0 ولا يمثل مسلسل صغير متسلسل أو باركود)
+                            let isQty = (c > 0 && !isNaN(numVal) && numVal > 0 && numVal <= 100000 && !isCode && !cellVal.includes('/'));
+
+                            // التحقق من اسم الصنف (يحتوي على حروف عربية أو أجنبية وليس كلمة مفتاحية للترويس)
+                            let isName = (cellVal.match(/[ء-يa-zA-Z]/) && cellVal.length >= 3 && 
+                                          !cellVal.includes("الكمية") && !cellVal.includes("الباركود") && 
+                                          !cellVal.includes("الصنف") && !cellVal.includes("فرع") && 
+                                          !cellVal.includes("فتح الله"));
+
+                            if (isCode) {
+                                if (!codes.includes(cleanDigits)) codes.push(cleanDigits);
+                            }
+                            if (isQty && qty === 0) {
+                                qty = numVal;
+                            }
+                            if (isName && !name) {
+                                name = cellVal;
                             }
                         }
-                    } else {
-                        // 5. في حالة التلف الشديد: العمل بخوارزمية الصيد المحمية
-                        for (let r = 0; r < processedRows.length; r++) {
-                            let rowCells = processedRows[r];
-                            let codes = [];
-                            let name = "";
-                            let qty = 0;
 
-                            for (let c = 0; c < rowCells.length; c++) {
-                                let cell = String(rowCells[c] || '').trim();
-                                if (!cell) continue;
-
-                                let digits = cell.replace(/\D/g, '');
-                                let num = parseFloat(cell.replace(/[,\s]/g, ''));
-
-                                let isCode = (digits.length >= 4 && digits.length <= 18 && !cell.match(/[ء-يa-zA-Z]/));
-                                // تجاوز العمود رقم 0 لتجنب سحب رقم المسلسل ككمية
-                                let isQuantity = (c > 0 && !isNaN(num) && num > 0 && num <= 100000 && !isCode);
-                                let isName = (cell.match(/[ء-يa-zA-Z]/) && cell.length > 2 && !cell.includes("الكمية") && !cell.includes("صنف"));
-
-                                if (isCode) codes.push(digits);
-                                if (isQuantity && qty === 0) qty = num;
-                                if (isName && !name) name = cell;
-                            }
-
-                            if (codes.length > 0 && qty > 0) {
-                                codes.sort((a,b) => b.length - a.length);
-                                currentItems.push({
-                                    id: currentItems.length,
-                                    barcode: codes[0],
-                                    allCodes: codes,
-                                    name: name || ('صنف ' + codes[0]),
-                                    reqQty: qty,
-                                    recQty: 0,
-                                    status: 'Unreceived',
-                                    prodDate: '--',
-                                    expiryDate: '--',
-                                    shelfLifeYears: 2,
-                                    isNoExpiry: false,
-                                    expiryEvaluation: 'غير مسجل'
-                                });
-                            }
+                        // إذا وجدنا باركود/كود مع كمية في نفس الصف الأفقي، يتم اعتماده فوراً
+                        if (codes.length > 0 && qty > 0) {
+                            codes.sort((a, b) => b.length - a.length); // الأطول هو الباركود الدولي الأساسي
+                            currentItems.push({
+                                id: currentItems.length,
+                                barcode: codes[0],
+                                allCodes: codes,
+                                name: name || ('صنف رقم ' + codes[0]),
+                                reqQty: qty,
+                                recQty: 0,
+                                status: 'Unreceived',
+                                prodDate: '--',
+                                expiryDate: '--',
+                                shelfLifeYears: 2,
+                                isNoExpiry: false,
+                                expiryEvaluation: 'غير مسجل'
+                            });
                         }
                     }
 
                     if(currentItems.length === 0) {
-                        alert("تم قراءة الشيت لكن لم يعثر النظام على أصناف. تأكد من إذن الصرف المرفوع.");
+                        alert("تم قراءة الشيت، ولكن لم يتم العثور على أي أصناف. تأكد من إذن الصرف.");
                         return;
                     }
 
@@ -380,7 +340,7 @@
                     document.getElementById('modeModal').classList.remove('hidden');
 
                 } catch(err) {
-                    alert("عذراً، حدث خطأ أثناء فك التشفير: " + err.message);
+                    alert("خطأ أثناء قراءة الملف: " + err.message);
                 }
             };
             reader.readAsArrayBuffer(file);
