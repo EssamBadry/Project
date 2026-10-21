@@ -31,13 +31,13 @@
     <!-- Header -->
     <header class="bg-slate-800 text-white p-4 rounded-2xl shadow-xl flex justify-between items-center mb-6 max-w-6xl mx-auto w-full border border-slate-700 no-print">
         <div class="flex items-center space-x-3 space-x-reverse">
-            <!-- اللوجو مع معالجة ذكية في حال عدم وجود الملف -->
+            <!-- اللوجو مع المعالجة الذكية -->
             <img src="63703.png" alt="Fathalla Logo" 
                  onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23ea580c\'/><text x=\'50\' y=\'70\' font-size=\'65\' font-family=\'Arial\' font-weight=\'bold\' fill=\'white\' text-anchor=\'middle\'>F</text></svg>'" 
                  class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
             <div>
                 <h1 class="font-extrabold text-xl text-orange-500 tracking-wide">أسواق فتح الله ماركت</h1>
-                <p class="text-xs text-slate-400 font-semibold mt-1">نظام استلام وتفريغ التحويلات (نسخة الجرد والصلاحيات)</p>
+                <p class="text-xs text-slate-400 font-semibold mt-1">نظام استلام وتفريغ التحويلات (النسخة الأساسية الشاملة)</p>
             </div>
         </div>
     </header>
@@ -53,7 +53,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-right mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-700 text-xs">
                 <div>
                     <label class="block font-bold mb-1">رقم إذن التحويل *</label>
-                    <input type="text" id="inputDocNo" value="" placeholder="يتم سحبه تلقائياً أو أدخله يدوياً" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white font-bold focus:outline-none focus:border-orange-500">
+                    <input type="text" id="inputDocNo" value="" placeholder="يتم سحبه تلقائياً" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white font-bold focus:outline-none focus:border-orange-500">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">تاريخ إذن الاستلام المرجعي *</label>
@@ -61,7 +61,7 @@
                 </div>
                 <div>
                     <label class="block font-bold mb-1">فرع الصرف *</label>
-                    <input type="text" id="inputSenderBranch" value="فرع سموحة" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                    <input type="text" id="inputSenderBranch" value="الفرع المصدر" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">فرع الاستلام *</label>
@@ -73,7 +73,6 @@
                 </div>
             </div>
 
-            <!-- إضافة الامتداد .Xls الخاص بـ FMS -->
             <input type="file" id="excelFileInput" accept=".xlsx, .xls, .Xls, .csv" class="hidden">
             
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
@@ -82,6 +81,18 @@
                 </button>
             </div>
         </section>
+
+        <!-- Mode Selection Modal -->
+        <div id="modeModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+            <div class="bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 text-center border border-orange-500/50">
+                <h3 class="text-xl font-bold mb-2 text-orange-400">طبيعة إذن التحويل</h3>
+                <p class="text-slate-400 text-sm mb-6">هل يتطلب تفريغ الإذن مراجعة تواريخ الصلاحية؟</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="setGlobalExpiryMode(true)" class="bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold shadow transition">نعم (بصلاحية)</button>
+                    <button onclick="setGlobalExpiryMode(false)" class="bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold transition">لا (بدون صلاحية)</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Workspace -->
         <div id="workspace" class="hidden flex-col gap-6 no-print">
@@ -148,6 +159,7 @@
                 <p><strong>فرع الصرف:</strong> <span id="printSenderBranch">--</span></p>
                 <p><strong>فرع الاستلام:</strong> <span id="printReceiverBranch">--</span></p>
                 <p><strong>مسئول الاستلام:</strong> <span id="printReceiverName">--</span></p>
+                <p><strong>طبيعة الإذن:</strong> <span id="printExpiryMode">--</span></p>
             </div>
 
             <table class="w-full text-xs text-right border-collapse mb-6">
@@ -188,7 +200,13 @@
                     <input type="number" id="modalQtyInput" min="0" required class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-xl font-bold text-center text-white focus:outline-none focus:border-orange-500">
                 </div>
 
-                <div class="space-y-3">
+                <!-- Checkbox for individual items without expiry -->
+                <div id="itemNoExpiryContainer" class="flex items-center gap-2 mb-2 p-2 bg-slate-900 rounded-lg border border-slate-700">
+                    <input type="checkbox" id="itemNoExpiryCheck" onchange="toggleItemExpiryFields()" class="w-5 h-5 accent-orange-600">
+                    <label for="itemNoExpiryCheck" class="text-sm font-bold text-slate-300 cursor-pointer">هذا الصنف بدون فترة صلاحية</label>
+                </div>
+
+                <div id="expiryFieldsContainer" class="space-y-3 transition-all duration-300">
                     <div>
                         <label class="block text-xs font-bold mb-1">تاريخ الإنتاج المطبوع (شهر / سنة)</label>
                         <input type="month" id="modalProdInput" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-lg font-bold text-center text-orange-400 focus:outline-none">
@@ -218,9 +236,11 @@
         let selectedItemIndex = null;
         let selectedShelfLifeYears = 2; 
         let html5QrcodeScanner = null;
+        let isGlobalExpiryRequired = true; // يتم تحديده من الشاشة الأولى
 
         document.getElementById('inputRecDate').valueAsDate = new Date();
 
+        // قراءة وتفكيك الشيت الديناميكي
         document.getElementById('excelFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -236,7 +256,7 @@
                     let headerRowIdx = -1;
                     let colMap = { qty: -1, name: -1, barcode: -1, code: -1 };
 
-                    // قراءة رقم المستند من الترويسة
+                    // الترويسة واستخراج رقم المستند
                     for(let r = 0; r < Math.min(15, rawRows.length); r++) {
                         const rowStr = rawRows[r] ? rawRows[r].join(" ") : "";
                         if(rowStr.includes("رقم المستند")) {
@@ -245,7 +265,7 @@
                         }
                     }
 
-                    // البحث الذكي والديناميكي عن أعمدة الشيت لتجنب الأخطاء
+                    // البحث الذكي عن الأعمدة
                     for (let r = 0; r < Math.min(25, rawRows.length); r++) {
                         const row = rawRows[r];
                         if (!row) continue;
@@ -259,7 +279,6 @@
                             else if (val.includes("كود الصنف")) foundCode = c;
                         }
 
-                        // إذا وجدنا عمود الباركود واسم الصنف، فهذا هو صف العناوين!
                         if (foundBarcode !== -1 && foundName !== -1) {
                             headerRowIdx = r;
                             colMap.qty = foundQty !== -1 ? foundQty : 0; 
@@ -270,13 +289,12 @@
                         }
                     }
 
-                    // لو النظام لم يجد صف العناوين
                     if (headerRowIdx === -1) {
-                        alert("لم نتمكن من استخراج بيانات تحويل صحيحة من هذا الشيت. تأكد من أنه إذن صرف فتح الله الرسمي.");
+                        alert("عفواً، لم نتمكن من تحديد أعمدة الشيت الأساسية. تأكد من صحة إذن الصرف.");
                         return;
                     }
 
-                    // استخراج الأصناف بناءً على الأعمدة المكتشفة بذكاء
+                    // سحب الأصناف
                     for (let r = headerRowIdx + 1; r < rawRows.length; r++) {
                         const row = rawRows[r];
                         if (!row || row.length === 0) continue;
@@ -298,20 +316,19 @@
                                 prodDate: '',
                                 expiryDate: '',
                                 shelfLifeYears: 2,
+                                isNoExpiry: false,
                                 expiryEvaluation: 'غير مسجل'
                             });
                         }
                     }
 
                     if(currentItems.length === 0) {
-                        alert("تم قراءة الشيت، ولكن لم يتم العثور على أي أصناف قابلة للاستلام.");
+                        alert("تم قراءة الشيت، ولكن لم يتم العثور على أي أصناف.");
                         return;
                     }
 
                     document.getElementById('uploadGateway').classList.add('hidden');
-                    document.getElementById('workspace').classList.remove('hidden');
-                    document.getElementById('workspace').classList.add('flex');
-                    renderTables();
+                    document.getElementById('modeModal').classList.remove('hidden');
 
                 } catch(err) {
                     alert("خطأ أثناء قراءة ملف الإكسيل: " + err.message);
@@ -319,6 +336,34 @@
             };
             reader.readAsArrayBuffer(file);
         });
+
+        // تحديد الوضع (بصلاحية أو بدون)
+        function setGlobalExpiryMode(required) {
+            isGlobalExpiryRequired = required;
+            document.getElementById('modeModal').classList.add('hidden');
+            document.getElementById('workspace').classList.remove('hidden');
+            document.getElementById('workspace').classList.add('flex');
+            
+            // تهيئة حالة الأصناف إذا كان الوضع بدون صلاحية كاملاً
+            if(!isGlobalExpiryRequired) {
+                currentItems.forEach(item => {
+                    item.isNoExpiry = true;
+                    item.expiryEvaluation = 'بدون صلاحية';
+                });
+            }
+            renderTables();
+        }
+
+        // إخفاء/إظهار حقول الصلاحية للصنف الواحد
+        function toggleItemExpiryFields() {
+            const isChecked = document.getElementById('itemNoExpiryCheck').checked;
+            const container = document.getElementById('expiryFieldsContainer');
+            if(isChecked) {
+                container.classList.add('hidden');
+            } else {
+                container.classList.remove('hidden');
+            }
+        }
 
         document.getElementById('barcodeSearchInput').addEventListener('input', function(e) {
             triggerSearch(e.target.value.trim());
@@ -364,8 +409,18 @@
             document.getElementById('modalItemBarcode').innerText = item.barcode;
             document.getElementById('modalQtyInput').value = item.recQty || item.reqQty;
             
-            if(item.prodDate) document.getElementById('modalProdInput').value = item.prodDate;
-            setShelfLifeYears(item.shelfLifeYears);
+            if(item.prodDate && item.prodDate !== '--') document.getElementById('modalProdInput').value = item.prodDate;
+            setShelfLifeYears(item.shelfLifeYears > 0 ? item.shelfLifeYears : 2);
+            
+            // ضبط استثناء الصلاحية
+            if (!isGlobalExpiryRequired) {
+                document.getElementById('itemNoExpiryContainer').classList.add('hidden');
+                document.getElementById('expiryFieldsContainer').classList.add('hidden');
+            } else {
+                document.getElementById('itemNoExpiryContainer').classList.remove('hidden');
+                document.getElementById('itemNoExpiryCheck').checked = item.isNoExpiry;
+                toggleItemExpiryFields();
+            }
             
             document.getElementById('actionModal').classList.remove('hidden');
         }
@@ -386,7 +441,7 @@
         }
 
         function evaluateExpiryStatus(prodStr, years) {
-            if(!prodStr) return { status: 'غير مسجل', badgeClass: 'bg-slate-700 text-slate-300', expStr: '--' };
+            if(!prodStr || prodStr === '--') return { status: 'غير مسجل', badgeClass: 'bg-slate-700 text-slate-300', expStr: '--' };
 
             const recDateVal = document.getElementById('inputRecDate').value;
             const recDateObj = recDateVal ? new Date(recDateVal) : new Date();
@@ -415,17 +470,27 @@
             if(selectedItemIndex === null) return;
 
             const qty = Number(document.getElementById('modalQtyInput').value);
-            const prod = document.getElementById('modalProdInput').value;
-
+            const isNoExpiry = isGlobalExpiryRequired ? document.getElementById('itemNoExpiryCheck').checked : true;
+            
             currentItems[selectedItemIndex].recQty = qty;
-            currentItems[selectedItemIndex].prodDate = prod;
-            currentItems[selectedItemIndex].shelfLifeYears = selectedShelfLifeYears;
+            currentItems[selectedItemIndex].isNoExpiry = isNoExpiry;
             currentItems[selectedItemIndex].status = 'Received';
 
-            if(prod) {
-                const evalRes = evaluateExpiryStatus(prod, selectedShelfLifeYears);
-                currentItems[selectedItemIndex].expiryEvaluation = evalRes.status;
-                currentItems[selectedItemIndex].expiryDate = evalRes.expStr;
+            if (isNoExpiry) {
+                currentItems[selectedItemIndex].prodDate = '--';
+                currentItems[selectedItemIndex].expiryDate = '--';
+                currentItems[selectedItemIndex].shelfLifeYears = 0;
+                currentItems[selectedItemIndex].expiryEvaluation = 'بدون صلاحية';
+            } else {
+                const prod = document.getElementById('modalProdInput').value;
+                currentItems[selectedItemIndex].prodDate = prod;
+                currentItems[selectedItemIndex].shelfLifeYears = selectedShelfLifeYears;
+                
+                if(prod) {
+                    const evalRes = evaluateExpiryStatus(prod, selectedShelfLifeYears);
+                    currentItems[selectedItemIndex].expiryEvaluation = evalRes.status;
+                    currentItems[selectedItemIndex].expiryDate = evalRes.expStr;
+                }
             }
 
             closeActionModal();
@@ -438,8 +503,22 @@
 
             currentItems.forEach((item, idx) => {
                 const isUnreceived = item.status === 'Unreceived';
-                const evalRes = evaluateExpiryStatus(item.prodDate, item.shelfLifeYears);
                 
+                // تحديث سريع لتقييم الصنف المعروض
+                let evalText = item.expiryEvaluation;
+                let badgeClass = 'bg-slate-700 text-slate-300';
+                let expStr = item.expiryDate || '--';
+
+                if(!item.isNoExpiry && item.prodDate && item.prodDate !== '--') {
+                    const evalRes = evaluateExpiryStatus(item.prodDate, item.shelfLifeYears);
+                    evalText = evalRes.status;
+                    badgeClass = evalRes.badgeClass;
+                    expStr = evalRes.expStr;
+                } else if (item.isNoExpiry) {
+                    evalText = 'بدون صلاحية';
+                    badgeClass = 'bg-slate-800 text-slate-400 border border-slate-600';
+                }
+
                 tbody1.innerHTML += `
                     <tr>
                         <td class="p-3 font-bold">${idx + 1}</td>
@@ -448,8 +527,8 @@
                         <td class="p-3 font-bold text-slate-300">${item.reqQty}</td>
                         <td class="p-3 font-bold ${isUnreceived ? 'opacity-40' : 'text-emerald-400'}">${item.recQty}</td>
                         <td class="p-3 font-mono text-slate-400">${item.prodDate || '--'}</td>
-                        <td class="p-3 font-mono text-slate-400">${evalRes.expStr || '--'}</td>
-                        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${evalRes.badgeClass}">${evalRes.status}</span></td>
+                        <td class="p-3 font-mono text-slate-400">${expStr}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${badgeClass}">${evalText}</span></td>
                         <td class="p-3"><button onclick="openActionModal(${idx})" class="bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 px-3 py-1 rounded text-xs font-bold border border-orange-500/30">استلام</button></td>
                     </tr>
                 `;
@@ -462,6 +541,7 @@
             document.getElementById('printSenderBranch').innerText = document.getElementById('inputSenderBranch').value || '--';
             document.getElementById('printReceiverBranch').innerText = document.getElementById('inputReceiverBranch').value || '--';
             document.getElementById('printReceiverName').innerText = document.getElementById('inputReceiverName').value || '--';
+            document.getElementById('printExpiryMode').innerText = isGlobalExpiryRequired ? 'إذن بصلاحية وتواريخ' : 'إذن خالي من الصلاحيات';
 
             const printTbody = document.getElementById('printTableBody');
             printTbody.innerHTML = '';
