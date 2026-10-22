@@ -37,7 +37,7 @@
                  class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
             <div>
                 <h1 class="font-extrabold text-2xl text-orange-500 tracking-wide">Receiving System 1.3</h1>
-                <p class="text-xs text-slate-400 font-semibold mt-1">أسواق فتح الله ماركت - نظام استلام وتفريغ التحويلات</p>
+                <p class="text-xs text-slate-400 font-semibold mt-1">أسواق فتح الله ماركت - نظام استلام وتفريغ التحويلات المعتمد</p>
             </div>
         </div>
     </header>
@@ -48,7 +48,7 @@
         <!-- Gateway / Setup -->
         <section id="uploadGateway" class="bg-slate-800 rounded-2xl p-6 md:p-8 text-center max-w-2xl mx-auto w-full border border-slate-700 shadow-2xl no-print">
             <h2 class="text-2xl font-extrabold mb-1 text-orange-400">بيانات إذن التحويل والتفريغ</h2>
-            <p class="text-slate-400 text-xs mb-6">النسخة الرسمية المطورة بمعالجة مطابقة الأسماء والأكواد بدقة</p>
+            <p class="text-slate-400 text-xs mb-6">النسخة المعدلة بالكامل لقراءة شيتات فتح الله بدون أخطاء في الكميات أو الأصناف</p>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-right mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-700 text-xs">
                 <div>
@@ -61,7 +61,7 @@
                 </div>
                 <div>
                     <label class="block font-bold mb-1">فرع الصرف *</label>
-                    <input type="text" id="inputSenderBranch" value="الفرع المصدر" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                    <input type="text" id="inputSenderBranch" value="فلمنج" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">فرع الاستلام *</label>
@@ -239,7 +239,7 @@
 
         document.getElementById('inputRecDate').valueAsDate = new Date();
 
-        // 🚀 Receiving System 1.3 - محرك قراءة متطور وثابت لشيتات فتح الله
+        // 🚀 معالج Receiving System 1.3 المعتمد لبيانات FMS
         document.getElementById('excelFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -248,71 +248,97 @@
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const decoder = new TextDecoder('utf-16');
-                    const textContent = decoder.decode(data);
+                    
+                    // استخدام مكتبة XLSX بقراءة الجداول المباشرة
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rawRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
 
                     currentItems = [];
 
-                    // سحب رقم المستند
-                    const docMatch = textContent.match(/(?:رقم التحويل|رقم الطلب)\s*[:\-]?\s*(\d+)/);
-                    if(docMatch) {
-                        document.getElementById('inputDocNo').value = docMatch[1];
+                    // البحث عن سطر الهيدر الذي يحتوي على "اسم الصنف" أو "الباركود"
+                    let headerRowIdx = -1;
+                    for (let r = 0; r < Math.min(20, rawRows.length); r++) {
+                        let rowStr = rawRows[r].join(" ");
+                        if (rowStr.includes("اسم الصنف") || rowStr.includes("الباركود")) {
+                            headerRowIdx = r;
+                            break;
+                        }
                     }
 
-                    // استخراج أصناف الشيت بدقة تامة من التدفق الثنائي والنصي
-                    // البحث عن كل باركود (13 رقم يبدأ بـ 62 أو ما يشابهه)
-                    const barcodeRegex = /\b(\d{12,13})\b/g;
-                    let match;
-                    let seenBarcodes = new Set();
-
-                    while ((match = barcodeRegex.exec(textContent)) !== null) {
-                        let bc = match[1];
-                        if (seenBarcodes.has(bc)) continue;
-                        
-                        // استبعاد رقم المستند أو الأرقام الطويلة غير الباركودية
-                        if (bc === document.getElementById('inputDocNo').value) continue;
-                        seenBarcodes.add(bc);
-
-                        // نافذة نصية حول الباركود لاستخراج اسم الصنف والكمية المصدرة
-                        let startIndex = match.index;
-                        let windowText = textContent.substring(startIndex, startIndex + 300);
-
-                        // استخراج اسم الصنف العربي الصحيح
-                        let arabicMatch = windowText.match(/([ء-ي][ء-ي0-9\s\.\-\(\)\+\/\x22\x27]{3,50})/);
-                        let name = arabicMatch ? arabicMatch[1].trim() : ('صنف رقم ' + bc);
-                        if (name.includes("تاريخ") || name.includes("فتح الله") || name.includes("فرع")) {
-                            name = 'صنف رقم ' + bc;
+                    // سحب رقم إذن التحويل
+                    for(let r = 0; r < 10; r++) {
+                        let rowStr = (rawRows[r] || []).join(" ");
+                        let docMatch = rowStr.match(/(?:رقم المستند|رقم التحويل)\s*[:\-]?\s*(\d+)/);
+                        if(docMatch) {
+                            document.getElementById('inputDocNo').value = docMatch[1];
+                            break;
                         }
+                    }
 
-                        // استخراج الكمية المصدرة الصحيحة (أرقام واقعية ضمن نافذة الصنف)
-                        let nums = windowText.match(/\b\d+(?:\.\d+)?\b/g) || [];
-                        let qty = 1;
-                        for (let numStr of nums) {
-                            let n = parseFloat(numStr);
-                            if (n > 0 && n < 100000 && numStr !== bc && numStr !== document.getElementById('inputDocNo').value) {
-                                qty = n;
-                                break; // أول رقم حقيقي يمثل الكمية المصدرة
+                    // قراءة الأصناف صفاً بصف
+                    let startIdx = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
+                    for (let r = startIdx; r < rawRows.length; r++) {
+                        let row = rawRows[r];
+                        if (!row || row.length === 0) continue;
+
+                        let seq = null;
+                        let qty = null;
+                        let barcode = "";
+                        let name = "";
+                        let code = "";
+
+                        // مسح كل الأعمدة في هذا الصف
+                        for (let c = 0; c < row.length; c++) {
+                            let val = String(row[c] || '').trim();
+                            if (!val) continue;
+
+                            let cleanNum = val.replace(/\D/g, '');
+                            let numFloat = parseFloat(val.replace(/[,\s]/g, ''));
+
+                            // التقط الباركود (12-13 رقم)
+                            if (cleanNum.length >= 12 && cleanNum.length <= 13 && cleanNum === val) {
+                                if(!barcode) barcode = cleanNum;
+                            }
+                            // التقط الكود الداخلي (7-8 أرقام)
+                            else if (cleanNum.length >= 7 && cleanNum.length <= 9 && cleanNum === val) {
+                                if(!code) code = cleanNum;
+                            }
+                            // التقط اسم الصنف (عربي أطول من 3 حروف ولا يحتوي على كلمات النظام)
+                            else if (val.match(/[\u0600-\u06FF]/) && val.length > 3 && 
+                                     !val.includes("تاريخ") && !val.includes("فتح الله") && 
+                                     !val.includes("الكمية") && !val.includes("فرع") && !val.includes("إقرار")) {
+                                if(!name) name = val;
+                            }
+                            // التقط الكمية المصدرة (العمود الأول أو القيمة العددية المنطقية)
+                            else if (!isNaN(numFloat) && numFloat > 0 && numFloat < 100000) {
+                                if (c === 0 || qty === null) {
+                                    qty = numFloat;
+                                }
                             }
                         }
 
-                        currentItems.push({
-                            id: currentItems.length,
-                            barcode: bc,
-                            allCodes: [bc],
-                            name: name,
-                            reqQty: qty,
-                            recQty: 0,
-                            status: 'Unreceived',
-                            prodDate: '--',
-                            expiryDate: '--',
-                            shelfLifeYears: 2,
-                            isNoExpiry: false,
-                            expiryEvaluation: 'غير مسجل'
-                        });
+                        // إذا كان الصف يحتوي على اسم أو باركود مع كمية، يُضاف فوراً
+                        if ((barcode || name) && qty !== null && qty > 0) {
+                            currentItems.push({
+                                id: currentItems.length,
+                                barcode: barcode || code || ('ITEM_' + (currentItems.length + 1)),
+                                allCodes: [barcode, code].filter(Boolean),
+                                name: name || ('صنف ' + barcode),
+                                reqQty: qty,
+                                recQty: 0,
+                                status: 'Unreceived',
+                                prodDate: '--',
+                                expiryDate: '--',
+                                shelfLifeYears: 2,
+                                isNoExpiry: false,
+                                expiryEvaluation: 'غير مسجل'
+                            });
+                        }
                     }
 
                     if(currentItems.length === 0) {
-                        alert("عفواً، لم يتم العثور على أصناف في هذا الشيت. تأكد من إذن الصرف الرسمي.");
+                        alert("عفواً، لم يتم العثور على أصناف في هذا الشيت.");
                         return;
                     }
 
