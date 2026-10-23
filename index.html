@@ -13,7 +13,7 @@
         }
     </script>
     
-    <!-- Script لمنع وميض الألوان عند التحميل (يقرأ الاختيار المحفوظ فوراً) -->
+    <!-- Script لمنع وميض الألوان عند التحميل -->
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
@@ -33,7 +33,7 @@
         body { font-family: 'Cairo', sans-serif; }
         .bg-primary { background-color: #ea580c; }
         .text-primary { color: #ea580c; }
-        #reader video { border-radius: 0.75rem; object-fit: cover; }
+        #reader video { border-radius: 0.75rem; object-fit: cover; width: 100% !important; }
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
@@ -57,9 +57,9 @@
         
         <!-- زر التبديل بين الوضع المظلم والفاتح -->
         <button onclick="toggleTheme()" class="p-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-yellow-400 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow">
-            <!-- أيقونة الشمس (تظهر في الوضع الداكن) -->
+            <!-- أيقونة الشمس -->
             <svg id="theme-toggle-light-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
-            <!-- أيقونة القمر (تظهر في الوضع الفاتح) -->
+            <!-- أيقونة القمر -->
             <svg id="theme-toggle-dark-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
         </button>
     </header>
@@ -134,10 +134,11 @@
                 </button>
             </div>
 
+            <!-- حاوية الكاميرا المباشرة -->
             <div id="scanner-container" class="hidden bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-200 dark:border-slate-700 shadow-xl relative max-w-lg mx-auto w-full transition-colors duration-300">
-                <button onclick="closeScanner()" class="absolute top-2 left-2 bg-red-600 text-white w-8 h-8 rounded-full font-bold z-10">✕</button>
+                <button onclick="closeScanner()" class="absolute top-2 left-2 bg-red-600 text-white w-8 h-8 rounded-full font-bold z-10 hover:bg-red-500 transition">✕</button>
                 <p class="text-center text-xs text-orange-500 dark:text-orange-400 mb-2 font-bold">الكاميرا مستعدة.. قم بمسح الأصناف بشكل متتالي</p>
-                <div id="reader" class="w-full h-auto"></div>
+                <div id="reader" class="w-full h-auto overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600 bg-black"></div>
             </div>
 
             <!-- Items Table -->
@@ -213,7 +214,7 @@
     <!-- Modal Form for Item Entry -->
     <div id="actionModal" class="fixed inset-0 bg-gray-900/50 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print transition-colors duration-300">
         <div class="bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-right border border-orange-500/50 relative transition-colors duration-300">
-            <button onclick="closeActionModal()" class="absolute left-4 top-4 text-gray-400 dark:text-slate-400 text-lg font-bold hover:text-gray-600 dark:hover:text-white">✕</button>
+            <button onclick="closeActionModal()" class="absolute left-4 top-4 text-gray-400 dark:text-slate-400 text-lg font-bold hover:text-gray-600 dark:hover:text-white transition">✕</button>
             
             <h3 id="modalItemName" class="text-lg font-extrabold text-orange-600 dark:text-orange-400 my-1">--</h3>
             <p class="text-xs text-gray-500 dark:text-slate-400 mb-4">الباركود: <span id="modalItemBarcode" class="font-mono">--</span></p>
@@ -302,7 +303,7 @@
         let currentItems = [];
         let selectedItemIndex = null;
         let selectedShelfLifeYears = 2; 
-        let html5QrcodeScanner = null;
+        let html5QrCode = null; // استخدام المتغير المباشر بدلا من Scanner لفتح الكاميرا فوراً
         let isGlobalExpiryRequired = true;
         let isScannerPaused = false; 
 
@@ -540,36 +541,59 @@
             };
         }
 
+        // بدء الكاميرا المباشر (التلقائي والخلفي)
         function startScanner() {
             document.getElementById('scanner-container').classList.remove('hidden');
             
-            if(html5QrcodeScanner) {
+            if(html5QrCode) {
                 isScannerPaused = false; 
                 return;
             }
 
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader", 
-                { fps: 10, qrbox: {width: 250, height: 100}, aspectRatio: 1.0 }, 
-                false
-            );
-            html5QrcodeScanner.render(
+            html5QrCode = new Html5Qrcode("reader");
+            
+            // التشغيل المباشر للكاميرا الخلفية (environment)
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: {width: 250, height: 100}, aspectRatio: 1.0 },
                 function(decodedText) { 
                     if(isScannerPaused) return; 
                     isScannerPaused = true;     
                     triggerSearch(decodedText, true); 
                 },
-                function(errorMessage) {}
-            );
+                function(errorMessage) {
+                    // تجاهل أخطاء القراءة المستمرة
+                }
+            ).catch((err) => {
+                showCustomAlert("تعذر تشغيل الكاميرا الخلفية. تأكد من إعطاء الصلاحيات للمتصفح.", function() {
+                    closeScanner();
+                });
+            });
         }
 
         function closeScanner() {
-            if(html5QrcodeScanner) {
-                try { html5QrcodeScanner.clear(); } catch(e) {}
-                html5QrcodeScanner = null;
+            if(html5QrCode) {
+                try {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.clear();
+                        html5QrCode = null;
+                        document.getElementById('scanner-container').classList.add('hidden');
+                        isScannerPaused = false;
+                    }).catch(err => {
+                        html5QrCode.clear();
+                        html5QrCode = null;
+                        document.getElementById('scanner-container').classList.add('hidden');
+                        isScannerPaused = false;
+                    });
+                } catch (e) {
+                    html5QrCode = null;
+                    document.getElementById('scanner-container').classList.add('hidden');
+                    isScannerPaused = false;
+                }
+            } else {
+                document.getElementById('scanner-container').classList.add('hidden');
+                isScannerPaused = false;
             }
-            document.getElementById('scanner-container').classList.add('hidden');
-            isScannerPaused = false;
         }
 
         function openActionModal(idx) {
@@ -608,9 +632,9 @@
             selectedShelfLifeYears = years;
             document.querySelectorAll('.years-btn').forEach((btn, idx) => {
                 if (idx + 1 === years) {
-                    btn.className = "years-btn bg-orange-600 text-white py-2 rounded font-bold text-xs shadow-md shadow-orange-500/30";
+                    btn.className = "years-btn bg-orange-600 text-white py-2 rounded font-bold text-xs shadow-md shadow-orange-500/30 transition";
                 } else {
-                    btn.className = "years-btn bg-gray-200 text-gray-600 dark:bg-slate-700 dark:text-slate-300 py-2 rounded font-bold text-xs";
+                    btn.className = "years-btn bg-gray-200 text-gray-600 dark:bg-slate-700 dark:text-slate-300 py-2 rounded font-bold text-xs transition";
                 }
             });
         }
