@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أسواق فتح الله ماركت - Receiving System 1.4</title>
+    <title>أسواق فتح الله ماركت - Receiving System 1.5</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (XLSX) -->
@@ -32,12 +32,10 @@
     <header class="bg-slate-800 text-white p-4 rounded-2xl shadow-xl flex justify-between items-center mb-6 max-w-6xl mx-auto w-full border border-slate-700 no-print">
         <div class="flex items-center space-x-3 space-x-reverse">
             <!-- اللوجو -->
-            <img src="63703.png" alt="Fathalla Logo" 
-                 onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23ea580c\'/><text x=\'50\' y=\'70\' font-size=\'65\' font-family=\'Arial\' font-weight=\'bold\' fill=\'white\' text-anchor=\'middle\'>F</text></svg>'" 
-                 class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
+            <div class="w-16 h-16 bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 flex items-center justify-center text-4xl font-extrabold text-orange-500">F</div>
             <div>
-                <h1 class="font-extrabold text-2xl text-orange-500 tracking-wide">Receiving System 1.4</h1>
-                <p class="text-xs text-slate-400 font-semibold mt-1">أسواق فتح الله ماركت - نظام استلام وتفريغ التحويلات المعتمد</p>
+                <h1 class="font-extrabold text-2xl text-orange-500 tracking-wide">Receiving System 1.5</h1>
+                <p class="text-xs text-slate-400 font-semibold mt-1">أسواق فتح الله ماركت - يدعم شيتات XLS و XLSX</p>
             </div>
         </div>
     </header>
@@ -48,7 +46,7 @@
         <!-- Gateway / Setup -->
         <section id="uploadGateway" class="bg-slate-800 rounded-2xl p-6 md:p-8 text-center max-w-2xl mx-auto w-full border border-slate-700 shadow-2xl no-print">
             <h2 class="text-2xl font-extrabold mb-1 text-orange-400">بيانات إذن التحويل والتفريغ</h2>
-            <p class="text-slate-400 text-xs mb-6">النسخة الرسمية 1.4 (متطابقة 100% مع هيكل ملفات فتح الله)</p>
+            <p class="text-slate-400 text-xs mb-6">النسخة المجهزة بمحرك القراءة الثنائي المزدوج لملفات الشغل</p>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-right mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-700 text-xs">
                 <div>
@@ -61,7 +59,7 @@
                 </div>
                 <div>
                     <label class="block font-bold mb-1">فرع الصرف *</label>
-                    <input type="text" id="inputSenderBranch" value="فلمنج" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                    <input type="text" id="inputSenderBranch" value="الفرع المصدر" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">فرع الاستلام *</label>
@@ -73,7 +71,8 @@
                 </div>
             </div>
 
-            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .Xls, .csv" class="hidden">
+            <!-- السماح بكل الصيغ -->
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
             
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <button onclick="document.getElementById('excelFileInput').click()" class="bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-lg text-base hover:bg-orange-600 transition">
@@ -145,7 +144,7 @@
                 <div class="text-right flex items-center gap-3">
                     <div class="w-12 h-12 bg-black text-white font-black rounded-xl border-2 border-black flex items-center justify-center text-3xl">F</div>
                     <div>
-                        <h1 class="text-xl font-bold">Receiving System 1.4</h1>
+                        <h1 class="text-xl font-bold">Receiving System 1.5</h1>
                         <h2 class="text-sm font-semibold">تقرير استلام تحويل مخزني</h2>
                     </div>
                 </div>
@@ -239,7 +238,6 @@
 
         document.getElementById('inputRecDate').valueAsDate = new Date();
 
-        // 🚀 محرك قراءة الأصناف لنسخة 1.4 (الوصول الدقيق للأعمدة الخاصة بنظام فتح الله)
         document.getElementById('excelFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -248,56 +246,118 @@
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    
-                    // استخدام مكتبة XLSX لقراءة المصفوفة كـ Sparse Array لضمان فهارس الأعمدة
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    // قراءة الأعمدة بناءً على الترتيب الأصلي في الشيت المخفي
-                    const rawRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: null});
-
                     currentItems = [];
 
-                    // سحب رقم إذن التحويل من أعلى الشيت
-                    for(let r = 0; r < 10; r++) {
-                        let rowStr = (rawRows[r] || []).join(" ");
-                        let docMatch = rowStr.match(/(?:رقم المستند|رقم التحويل|رقم الطلب)\s*[:\-]?\s*(\d+)/);
-                        if(docMatch) {
-                            document.getElementById('inputDocNo').value = docMatch[1];
-                            break;
+                    // 1. محاولة القراءة باستخدام SheetJS (للملفات الـ XLSX السليمة)
+                    try {
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const rawRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: null});
+
+                        // سحب رقم إذن التحويل
+                        for(let r = 0; r < Math.min(15, rawRows.length); r++) {
+                            let rowStr = (rawRows[r] || []).join(" ");
+                            let docMatch = rowStr.match(/(?:رقم المستند|رقم التحويل|رقم الطلب)\s*[:\-]?\s*(\d+)/);
+                            if(docMatch && !document.getElementById('inputDocNo').value) {
+                                document.getElementById('inputDocNo').value = docMatch[1];
+                                break;
+                            }
                         }
+
+                        // فحص الأعمدة (الكمية في 0، الاسم في 11، الباركود في 30، الكود في 33)
+                        for (let r = 0; r < rawRows.length; r++) {
+                            let row = rawRows[r];
+                            if (!row || row.length === 0) continue;
+
+                            let qty = parseFloat(row[0]);
+                            let name = row[11] ? String(row[11]).trim() : "";
+                            let barcode = row[30] ? String(row[30]).trim() : "";
+                            let internalCode = row[33] ? String(row[33]).trim() : "";
+
+                            if (!isNaN(qty) && qty > 0 && name && name.length > 2 && !name.includes("الكمية") && !name.includes("اسم الصنف")) {
+                                let finalBarcode = "";
+                                let codesList = [];
+                                
+                                if (barcode && barcode.replace(/\D/g, '') === barcode) {
+                                    finalBarcode = barcode;
+                                    codesList.push(barcode);
+                                }
+                                if (internalCode && internalCode.replace(/\D/g, '') === internalCode) {
+                                    codesList.push(internalCode);
+                                    if (!finalBarcode) finalBarcode = internalCode;
+                                }
+
+                                currentItems.push({
+                                    id: currentItems.length,
+                                    barcode: finalBarcode || ('NO_CODE_' + (currentItems.length + 1)),
+                                    allCodes: codesList,
+                                    name: name,
+                                    reqQty: qty,
+                                    recQty: 0,
+                                    status: 'Unreceived',
+                                    prodDate: '--',
+                                    expiryDate: '--',
+                                    shelfLifeYears: 2,
+                                    isNoExpiry: false,
+                                    expiryEvaluation: 'غير مسجل'
+                                });
+                            }
+                        }
+                    } catch(err) {
+                        console.log("SheetJS Warning:", err);
                     }
 
-                    // قراءة الأصناف بالاعتماد المباشر على أماكن الأعمدة الثابتة في نظام Oracle/FMS
-                    // [العمود 0: الكمية الفعلي], [العمود 11: اسم الصنف], [العمود 30: الباركود], [العمود 33: الكود الداخلي]
-                    for (let r = 0; r < rawRows.length; r++) {
-                        let row = rawRows[r];
-                        if (!row || row.length === 0) continue;
+                    // 2. محرك الطوارئ للملفات المعقدة (XLS BIFF8) الخاصة بفتح الله
+                    if(currentItems.length === 0) {
+                        console.log("استخدام محرك القراءة الثنائي المخصص...");
+                        // تحويل الملف لنص عبر فك تشفير utf-16le اللي بتستخدمه شيتات الـ OLE/BIFF8 
+                        const decoder = new TextDecoder('utf-16le');
+                        const textContent = decoder.decode(data);
 
-                        let qty = parseFloat(row[0]);
-                        let name = row[11] ? String(row[11]).trim() : "";
-                        let barcode = row[30] ? String(row[30]).trim() : "";
-                        let internalCode = row[33] ? String(row[33]).trim() : "";
+                        // استخراج رقم المستند لو لسه فاضي
+                        if(!document.getElementById('inputDocNo').value) {
+                            const docMatch = textContent.match(/(?:رقم المستند|رقم التحويل|رقم الطلب)\s*[:\-]?\s*(\d+)/);
+                            if(docMatch) document.getElementById('inputDocNo').value = docMatch[1];
+                        }
 
-                        // الفلترة الدقيقة (تجاهل النصوص العشوائية والبيانات غير المكتملة)
-                        if (!isNaN(qty) && qty > 0 && name && name.length > 2 && !name.includes("الكمية") && !name.includes("اسم الصنف")) {
-                            
-                            // التحقق من صلاحية الباركود
-                            let finalBarcode = "";
-                            let codesList = [];
-                            
-                            if (barcode && barcode.replace(/\D/g, '') === barcode) {
-                                finalBarcode = barcode;
-                                codesList.push(barcode);
+                        // البحث عن الباركودات (12 أو 13 رقم)
+                        const barcodeRegex = /\b(\d{12,13})\b/g;
+                        let match;
+                        let seenBarcodes = new Set();
+                        let docNo = document.getElementById('inputDocNo').value;
+
+                        while ((match = barcodeRegex.exec(textContent)) !== null) {
+                            let bc = match[1];
+                            if (seenBarcodes.has(bc) || bc === docNo) continue;
+                            seenBarcodes.add(bc);
+
+                            // أخذ نافذة نصية حول الباركود للبحث عن الاسم والكمية
+                            let startIndex = match.index;
+                            // في ملفات FMS، الاسم والكمية بييجوا غالباً بعد الباركود أو قبله بمسافة بسيطة
+                            let windowText = textContent.substring(Math.max(0, startIndex - 50), startIndex + 350);
+
+                            // استخراج الاسم العربي
+                            let arabicMatch = windowText.match(/([ء-ي][ء-ي0-9\s\.\-\(\)\+\/\x22\x27]{3,50})/);
+                            let name = arabicMatch ? arabicMatch[1].trim() : ('صنف رقم ' + bc);
+                            if (name.includes("تاريخ") || name.includes("فتح الله") || name.includes("الكمية") || name.includes("فرع")) {
+                                name = 'صنف رقم ' + bc;
                             }
-                            if (internalCode && internalCode.replace(/\D/g, '') === internalCode) {
-                                codesList.push(internalCode);
-                                if (!finalBarcode) finalBarcode = internalCode;
+
+                            // استخراج الكمية (أرقام صحيحة أو عشرية)
+                            let nums = windowText.match(/\b\d+(?:\.\d+)?\b/g) || [];
+                            let qty = 1;
+                            for (let numStr of nums) {
+                                let n = parseFloat(numStr);
+                                if (n > 0 && n < 100000 && numStr !== bc && numStr !== docNo) {
+                                    qty = n;
+                                    break; // أول رقم يطابق الشروط هو غالباً الكمية المصدرة
+                                }
                             }
 
                             currentItems.push({
                                 id: currentItems.length,
-                                barcode: finalBarcode || ('NO_CODE_' + (currentItems.length + 1)),
-                                allCodes: codesList,
+                                barcode: bc,
+                                allCodes: [bc],
                                 name: name,
                                 reqQty: qty,
                                 recQty: 0,
@@ -311,58 +371,8 @@
                         }
                     }
 
-                    //Fallback (محرك طوارئ): إذا فشل القراءة العمودية، نستخدم القارئ المرن الأفقي
                     if(currentItems.length === 0) {
-                        for (let r = 0; r < rawRows.length; r++) {
-                            let row = rawRows[r];
-                            if (!row || row.length === 0) continue;
-
-                            let qty = null;
-                            let barcode = "";
-                            let name = "";
-                            let code = "";
-
-                            for (let c = 0; c < row.length; c++) {
-                                let val = String(row[c] || '').trim();
-                                if (!val || val === "null") continue;
-
-                                let cleanNum = val.replace(/\D/g, '');
-                                let numFloat = parseFloat(val.replace(/[,\s]/g, ''));
-
-                                if (cleanNum.length >= 12 && cleanNum.length <= 13 && cleanNum === val) {
-                                    if(!barcode) barcode = cleanNum;
-                                } else if (cleanNum.length >= 7 && cleanNum.length <= 9 && cleanNum === val) {
-                                    if(!code) code = cleanNum;
-                                } else if (val.match(/[\u0600-\u06FF]/) && val.length > 3 && 
-                                         !val.includes("تاريخ") && !val.includes("فتح الله") && 
-                                         !val.includes("الكمية") && !val.includes("فرع")) {
-                                    if(!name) name = val;
-                                } else if (!isNaN(numFloat) && numFloat > 0 && numFloat < 100000) {
-                                    if (c === 0 || qty === null) qty = numFloat;
-                                }
-                            }
-
-                            if ((barcode || name) && qty !== null && qty > 0) {
-                                currentItems.push({
-                                    id: currentItems.length,
-                                    barcode: barcode || code || ('ITEM_' + (currentItems.length + 1)),
-                                    allCodes: [barcode, code].filter(Boolean),
-                                    name: name || ('صنف ' + barcode),
-                                    reqQty: qty,
-                                    recQty: 0,
-                                    status: 'Unreceived',
-                                    prodDate: '--',
-                                    expiryDate: '--',
-                                    shelfLifeYears: 2,
-                                    isNoExpiry: false,
-                                    expiryEvaluation: 'غير مسجل'
-                                });
-                            }
-                        }
-                    }
-
-                    if(currentItems.length === 0) {
-                        alert("عفواً، لم يتم العثور على أصناف في هذا الشيت.");
+                        alert("عفواً، لم يتم العثور على أصناف في هذا الشيت. تأكد أن الملف سليم.");
                         return;
                     }
 
@@ -370,7 +380,7 @@
                     document.getElementById('modeModal').classList.remove('hidden');
 
                 } catch(err) {
-                    alert("خطأ أثناء قراءة الملف: " + err.message);
+                    alert("حدث خطأ أثناء قراءة الملف: " + err.message);
                 }
             };
             reader.readAsArrayBuffer(file);
