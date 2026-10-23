@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أسواق فتح الله ماركت - Receiving System 1.5</title>
+    <title>Receiving System</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (XLSX) -->
@@ -32,10 +32,10 @@
     <header class="bg-slate-800 text-white p-4 rounded-2xl shadow-xl flex justify-between items-center mb-6 max-w-6xl mx-auto w-full border border-slate-700 no-print">
         <div class="flex items-center space-x-3 space-x-reverse">
             <!-- اللوجو -->
-            <div class="w-16 h-16 bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 flex items-center justify-center text-4xl font-extrabold text-orange-500">F</div>
+            <img src="63703_2.png" alt="Logo" class="w-16 h-16 object-contain bg-slate-900 rounded-xl shadow-lg border border-orange-500/30 p-1">
             <div>
-                <h1 class="font-extrabold text-2xl text-orange-500 tracking-wide">Receiving System 1.5</h1>
-                <p class="text-xs text-slate-400 font-semibold mt-1">أسواق فتح الله ماركت - يدعم شيتات XLS و XLSX</p>
+                <h1 class="font-extrabold text-2xl text-orange-500 tracking-wide">Receiving System</h1>
+                <p class="text-xs text-slate-400 font-semibold mt-1">نظام استلام تحويل</p>
             </div>
         </div>
     </header>
@@ -46,7 +46,7 @@
         <!-- Gateway / Setup -->
         <section id="uploadGateway" class="bg-slate-800 rounded-2xl p-6 md:p-8 text-center max-w-2xl mx-auto w-full border border-slate-700 shadow-2xl no-print">
             <h2 class="text-2xl font-extrabold mb-1 text-orange-400">بيانات إذن التحويل والتفريغ</h2>
-            <p class="text-slate-400 text-xs mb-6">النسخة المجهزة بمحرك القراءة الثنائي المزدوج لملفات الشغل</p>
+            <p class="text-slate-400 text-xs mb-6">يرجى إكمال البيانات ورفع ملف الإذن للمطابقة</p>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-right mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-700 text-xs">
                 <div>
@@ -59,15 +59,15 @@
                 </div>
                 <div>
                     <label class="block font-bold mb-1">فرع الصرف *</label>
-                    <input type="text" id="inputSenderBranch" value="الفرع المصدر" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                    <input type="text" id="inputSenderBranch" value="" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
                 </div>
                 <div>
                     <label class="block font-bold mb-1">فرع الاستلام *</label>
-                    <input type="text" id="inputReceiverBranch" value="عجمى ستار مخزن نيو لوجيستيك 21" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                    <input type="text" id="inputReceiverBranch" value="فلمنج" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
                 </div>
                 <div class="md:col-span-2">
                     <label class="block font-bold mb-1">اسم مسئول الاستلام *</label>
-                    <input type="text" id="inputReceiverName" value="عصام بدري" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
+                    <input type="text" id="inputReceiverName" value="" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none">
                 </div>
             </div>
 
@@ -112,6 +112,7 @@
 
             <div id="scanner-container" class="hidden bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-xl relative max-w-lg mx-auto w-full">
                 <button onclick="closeScanner()" class="absolute top-2 left-2 bg-red-600 text-white w-8 h-8 rounded-full font-bold z-10">✕</button>
+                <p class="text-center text-xs text-orange-400 mb-2 font-bold">الكاميرا مستعدة.. قم بمسح الأصناف بشكل متتالي</p>
                 <div id="reader" class="w-full h-auto"></div>
             </div>
 
@@ -142,10 +143,10 @@
         <div id="printableDocument" class="hidden print-only bg-white text-black p-4">
             <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-4">
                 <div class="text-right flex items-center gap-3">
-                    <div class="w-12 h-12 bg-black text-white font-black rounded-xl border-2 border-black flex items-center justify-center text-3xl">F</div>
+                    <img src="63703_2.png" alt="Logo" class="w-12 h-12 object-contain" style="filter: grayscale(100%);">
                     <div>
-                        <h1 class="text-xl font-bold">Receiving System 1.5</h1>
-                        <h2 class="text-sm font-semibold">تقرير استلام تحويل مخزني</h2>
+                        <h1 class="text-xl font-bold">Receiving System</h1>
+                        <h2 class="text-sm font-semibold">تقرير استلام تحويل</h2>
                     </div>
                 </div>
                 <div class="text-left font-mono text-xs">
@@ -235,6 +236,7 @@
         let selectedShelfLifeYears = 2; 
         let html5QrcodeScanner = null;
         let isGlobalExpiryRequired = true;
+        let isScannerPaused = false; // التحكم في إيقاف وتشغيل الكاميرا
 
         document.getElementById('inputRecDate').valueAsDate = new Date();
 
@@ -307,20 +309,16 @@
                         console.log("SheetJS Warning:", err);
                     }
 
-                    // 2. محرك الطوارئ للملفات المعقدة (XLS BIFF8) الخاصة بفتح الله
+                    // 2. محرك الطوارئ للملفات المعقدة (XLS BIFF8)
                     if(currentItems.length === 0) {
-                        console.log("استخدام محرك القراءة الثنائي المخصص...");
-                        // تحويل الملف لنص عبر فك تشفير utf-16le اللي بتستخدمه شيتات الـ OLE/BIFF8 
                         const decoder = new TextDecoder('utf-16le');
                         const textContent = decoder.decode(data);
 
-                        // استخراج رقم المستند لو لسه فاضي
                         if(!document.getElementById('inputDocNo').value) {
                             const docMatch = textContent.match(/(?:رقم المستند|رقم التحويل|رقم الطلب)\s*[:\-]?\s*(\d+)/);
                             if(docMatch) document.getElementById('inputDocNo').value = docMatch[1];
                         }
 
-                        // البحث عن الباركودات (12 أو 13 رقم)
                         const barcodeRegex = /\b(\d{12,13})\b/g;
                         let match;
                         let seenBarcodes = new Set();
@@ -331,26 +329,22 @@
                             if (seenBarcodes.has(bc) || bc === docNo) continue;
                             seenBarcodes.add(bc);
 
-                            // أخذ نافذة نصية حول الباركود للبحث عن الاسم والكمية
                             let startIndex = match.index;
-                            // في ملفات FMS، الاسم والكمية بييجوا غالباً بعد الباركود أو قبله بمسافة بسيطة
                             let windowText = textContent.substring(Math.max(0, startIndex - 50), startIndex + 350);
 
-                            // استخراج الاسم العربي
                             let arabicMatch = windowText.match(/([ء-ي][ء-ي0-9\s\.\-\(\)\+\/\x22\x27]{3,50})/);
                             let name = arabicMatch ? arabicMatch[1].trim() : ('صنف رقم ' + bc);
                             if (name.includes("تاريخ") || name.includes("فتح الله") || name.includes("الكمية") || name.includes("فرع")) {
                                 name = 'صنف رقم ' + bc;
                             }
 
-                            // استخراج الكمية (أرقام صحيحة أو عشرية)
                             let nums = windowText.match(/\b\d+(?:\.\d+)?\b/g) || [];
                             let qty = 1;
                             for (let numStr of nums) {
                                 let n = parseFloat(numStr);
                                 if (n > 0 && n < 100000 && numStr !== bc && numStr !== docNo) {
                                     qty = n;
-                                    break; // أول رقم يطابق الشروط هو غالباً الكمية المصدرة
+                                    break; 
                                 }
                             }
 
@@ -412,42 +406,65 @@
         }
 
         document.getElementById('barcodeSearchInput').addEventListener('input', function(e) {
-            triggerSearch(e.target.value.trim());
+            triggerSearch(e.target.value.trim(), false);
         });
 
-        function triggerSearch(val) {
+        function triggerSearch(val, fromScanner = false) {
             if(val.length >= 4) {
                 const matches = currentItems.filter(item => {
                     return item.allCodes.some(code => code.endsWith(val) || code === val);
                 });
+                
                 if(matches.length === 1) {
                     openActionModal(matches[0].id);
                     document.getElementById('barcodeSearchInput').value = '';
+                } else if (fromScanner) {
+                    // في حالة عدم العثور على الصنف أثناء الفحص بالكاميرا
+                    alert("تنبيه: هذا الصنف غير مدرج في إذن التحويل!");
+                    setTimeout(() => { isScannerPaused = false; }, 1500); 
                 }
+            } else if (fromScanner) {
+                setTimeout(() => { isScannerPaused = false; }, 1000); 
             }
         }
 
         function startScanner() {
             document.getElementById('scanner-container').classList.remove('hidden');
+            
+            if(html5QrcodeScanner) {
+                isScannerPaused = false; // استئناف الكاميرا لو كانت مفتوحة
+                return;
+            }
+
             html5QrcodeScanner = new Html5QrcodeScanner(
                 "reader", 
                 { fps: 10, qrbox: {width: 250, height: 100}, aspectRatio: 1.0 }, 
                 false
             );
             html5QrcodeScanner.render(
-                function(decodedText) { closeScanner(); triggerSearch(decodedText); },
+                function(decodedText) { 
+                    if(isScannerPaused) return; // تجاهل القراءة لو النافذة مفتوحة
+                    isScannerPaused = true;     // إيقاف مؤقت للقراءة
+                    triggerSearch(decodedText, true); 
+                },
                 function(errorMessage) {}
             );
         }
 
         function closeScanner() {
-            if(html5QrcodeScanner) html5QrcodeScanner.clear();
+            if(html5QrcodeScanner) {
+                try { html5QrcodeScanner.clear(); } catch(e) {}
+                html5QrcodeScanner = null;
+            }
             document.getElementById('scanner-container').classList.add('hidden');
+            isScannerPaused = false;
         }
 
         function openActionModal(idx) {
+            isScannerPaused = true; // تعطيل القراءة بالكاميرا أثناء عرض النافذة
             selectedItemIndex = idx;
             const item = currentItems[idx];
+            
             document.getElementById('modalItemName').innerText = item.name;
             document.getElementById('modalItemBarcode').innerText = item.barcode;
             document.getElementById('modalQtyInput').value = item.recQty || item.reqQty;
@@ -465,10 +482,17 @@
             }
             
             document.getElementById('actionModal').classList.remove('hidden');
+            
+            // التركيز التلقائي على حقل الكمية لسهولة التعديل
+            setTimeout(() => { document.getElementById('modalQtyInput').select(); }, 100);
         }
 
         function closeActionModal() {
             document.getElementById('actionModal').classList.add('hidden');
+            // إعادة تشغيل الكاميرا تلقائياً بعد إغلاق النافذة بـ 1 ثانية
+            if (!document.getElementById('scanner-container').classList.contains('hidden')) {
+                setTimeout(() => { isScannerPaused = false; }, 1000); 
+            }
         }
 
         function setShelfLifeYears(years) {
@@ -561,7 +585,7 @@
                 }
 
                 tbody1.innerHTML += `
-                    <tr>
+                    <tr class="hover:bg-slate-700/50 transition">
                         <td class="p-3 font-bold">${idx + 1}</td>
                         <td class="p-3 font-mono font-bold text-orange-400">${item.barcode}</td>
                         <td class="p-3 font-bold text-slate-200">${item.name}</td>
